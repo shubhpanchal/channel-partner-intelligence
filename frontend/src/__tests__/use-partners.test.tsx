@@ -25,7 +25,7 @@ const MOCK_LIST_RESPONSE: partnersApi.PartnerListResponse = {
       active: true,
       tier: "Tier 1",
       channel_type: "Corporate Agency",
-      assigned_salesperson: { id: "sp-101", name: "Rahul Sharma" },
+      assigned_salesperson: { id: "sp-101", name: "Rohit Deshmukh" },
       summary_stats: {
         total_leads: 50,
         qualified_leads: 35,
@@ -37,10 +37,10 @@ const MOCK_LIST_RESPONSE: partnersApi.PartnerListResponse = {
     },
   ],
   pagination: {
-    total: 175,
+    total: 36,
     page: 1,
     page_size: 20,
-    total_pages: 9,
+    total_pages: 2,
   },
 };
 
@@ -59,9 +59,9 @@ const MOCK_DETAIL_RESPONSE: partnersApi.PartnerDetailResponse = {
   channel_type: "Corporate Agency",
   assigned_salesperson: {
     id: "sp-101",
-    name: "Rahul Sharma",
-    email: "rahul@developer.com",
-    phone: "+91 98200 00001",
+    name: "Rohit Deshmukh",
+    email: "rohit.deshmukh@harivishva.com",
+    phone: "+91 98220 11001",
   },
   metrics: {
     total_leads: 50,

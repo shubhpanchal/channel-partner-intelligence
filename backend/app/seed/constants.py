@@ -25,8 +25,8 @@ PROJECT_TEMPLATES = [
         "status": "Active",
         "launch_date": "2025-04-01",
         "target_units": 320,
-        "starting_price": Decimal("7500000.00"),
-        "unit_types": ["2 BHK Luxury", "3 BHK Premium"],
+        "starting_price": Decimal("8800000.00"),
+        "unit_types": ["2 BHK Smart", "2 BHK Premium", "3 BHK Luxury"],
     },
     {
         "id": "prj-sky-p2",
@@ -38,8 +38,8 @@ PROJECT_TEMPLATES = [
         "status": "Active",
         "launch_date": "2025-10-15",
         "target_units": 280,
-        "starting_price": Decimal("8200000.00"),
-        "unit_types": ["2 BHK Grande", "3 BHK Royale", "4 BHK Sky Suite"],
+        "starting_price": Decimal("9500000.00"),
+        "unit_types": ["2 BHK Premium", "3 BHK Luxury", "3 BHK Sky Villa"],
     },
     {
         "id": "prj-inf-p1",
@@ -50,9 +50,9 @@ PROJECT_TEMPLATES = [
         "city": "Pune",
         "status": "Active",
         "launch_date": "2025-02-01",
-        "target_units": 360,
-        "starting_price": Decimal("6800000.00"),
-        "unit_types": ["2 BHK Smart", "3 BHK Urban"],
+        "target_units": 350,
+        "starting_price": Decimal("8200000.00"),
+        "unit_types": ["2 BHK Smart", "2 BHK Premium", "3 BHK Luxury"],
     },
     {
         "id": "prj-inf-p2",
@@ -63,13 +63,13 @@ PROJECT_TEMPLATES = [
         "city": "Pune",
         "status": "Active",
         "launch_date": "2025-08-01",
-        "target_units": 340,
-        "starting_price": Decimal("7400000.00"),
-        "unit_types": ["2 BHK Prime", "3 BHK Elite", "3.5 BHK Signature"],
+        "target_units": 300,
+        "starting_price": Decimal("8900000.00"),
+        "unit_types": ["2 BHK Premium", "3 BHK Luxury", "3.5 BHK Signature"],
     },
 ]
 
-# Sales / Relationship Managers (5 Dedicated Managers)
+# Authoritative Relationship Managers (5 Dedicated Managers)
 SALESPEOPLE_TEMPLATES = [
     {
         "id": "sp-101",
@@ -80,33 +80,45 @@ SALESPEOPLE_TEMPLATES = [
     },
     {
         "id": "sp-102",
-        "name": "Priya Kulkarni",
-        "email": "priya.kulkarni@harivishva.com",
+        "name": "Sneha Kulkarni",
+        "email": "sneha.kulkarni@harivishva.com",
         "phone": "+919822011002",
         "team": "Skyfinia Relationship Desk",
     },
     {
         "id": "sp-103",
-        "name": "Amitabh Verma",
-        "email": "amitabh.verma@harivishva.com",
+        "name": "Amit Patil",
+        "email": "amit.patil@harivishva.com",
         "phone": "+919822011003",
         "team": "Infinia Relationship Desk",
     },
     {
         "id": "sp-104",
-        "name": "Sneha Patil",
-        "email": "sneha.patil@harivishva.com",
+        "name": "Priya Joshi",
+        "email": "priya.joshi@harivishva.com",
         "phone": "+919822011004",
         "team": "Key Partner Accounts",
     },
     {
         "id": "sp-105",
-        "name": "Rajesh Nair",
-        "email": "rajesh.nair@harivishva.com",
+        "name": "Rahul Shinde",
+        "email": "rahul.shinde@harivishva.com",
         "phone": "+919822011005",
         "team": "Channel Growth Desk",
     },
 ]
+
+AUTHORITATIVE_MANAGER_NAMES = {sp["name"] for sp in SALESPEOPLE_TEMPLATES}
+AUTHORITATIVE_MANAGER_EMAILS = {sp["email"] for sp in SALESPEOPLE_TEMPLATES}
+
+# Synthetic Unit Configuration Premiums
+UNIT_TYPE_PREMIUMS = {
+    "2 BHK Smart": Decimal("0.00"),
+    "2 BHK Premium": Decimal("400000.00"),
+    "3 BHK Luxury": Decimal("1200000.00"),
+    "3 BHK Sky Villa": Decimal("2200000.00"),
+    "3.5 BHK Signature": Decimal("2000000.00"),
+}
 
 # Brokerage and Agency Name Components
 PARTNER_PREFIXES = [
@@ -161,13 +173,11 @@ LOST_REASONS = [
 ]
 
 BUDGET_RANGES = [
-    "45L - 65L",
-    "65L - 90L",
-    "90L - 1.25Cr",
-    "1.25Cr - 1.75Cr",
-    "1.75Cr - 2.5Cr",
-    "2.5Cr - 4.0Cr",
-    "4.0Cr+",
+    "80L - 95L",
+    "95L - 1.20Cr",
+    "1.20Cr - 1.50Cr",
+    "1.50Cr - 1.90Cr",
+    "1.90Cr+",
 ]
 
 ACTIVITY_TYPES = [

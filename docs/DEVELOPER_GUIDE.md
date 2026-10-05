@@ -10,7 +10,7 @@
 - **Phase 2B Complete**: SQLAlchemy 2.0 database models, SQLite schema with foreign keys and partial unique indexes, deterministic synthetic data generator (`SEED = 42`), comprehensive data-integrity validator, and backend CLI management tools.
 - **Phase 2C-1 Complete**: First end-to-end vertical slice connecting `GET /api/v1/overview/summary` to the Next.js frontend via TanStack Query, eliminating mock data and rendering 100% database-backed metrics.
 - **Phase 2C-2 Complete**: Second end-to-end vertical slice delivering `GET /api/v1/partners` and `GET /api/v1/partners/{id}`, real-time filtering, debounced multi-field search, zero N+1 batch-grouped SQL queries, pagination, and Partner Detail view with 4-stage conversion funnels and transaction logs.
-- **Phase 2D Complete**: Personalized synthetic demo tailored specifically to Harivishva's Tathawade (Pune) residential portfolio across 2 project families (Skyfinia Phase 1 & 2, Infinia Phase 1 & 2), 5 sales managers, 36 partners (6 T1, 10 T2, 20 T3), ~1,230 leads, ~704 visits, and ~139 bookings, accompanied by subtle synthetic demo context indicators.
+- **Phase 2D Complete**: Personalized synthetic demo tailored specifically to Harivishva's Tathawade (Pune) residential portfolio across 2 project families (Skyfinia Phase 1 & 2, Infinia Phase 1 & 2), 5 sales managers, 36 partners (6 T1, 10 T2, 20 T3), ~1,262 leads, ~728 visits, and ~156 bookings, accompanied by subtle synthetic demo context indicators.
 - Strict quality gates enforced across both backend (>96% coverage) and frontend (>99% coverage).
 
 ---

@@ -22,7 +22,7 @@ const MOCK_LIST_DATA: PartnerListResponse = {
       active: true,
       tier: "Tier 1",
       channel_type: "Corporate Agency",
-      assigned_salesperson: { id: "sp-101", name: "Rahul Sharma" },
+      assigned_salesperson: { id: "sp-101", name: "Rohit Deshmukh" },
       summary_stats: {
         total_leads: 50,
         qualified_leads: 35,

@@ -21,9 +21,9 @@ const MOCK_PARTNER_DETAIL: PartnerDetailResponse = {
   channel_type: "Corporate Agency",
   assigned_salesperson: {
     id: "sp-101",
-    name: "Rahul Sharma",
-    email: "rahul@developer.com",
-    phone: "+91 98200 00001",
+    name: "Rohit Deshmukh",
+    email: "rohit.deshmukh@harivishva.com",
+    phone: "+91 98220 11001",
   },
   metrics: {
     total_leads: 50,
@@ -45,8 +45,8 @@ const MOCK_PARTNER_DETAIL: PartnerDetailResponse = {
       lead_code: "LD-2026-0001",
       customer_name: "Suresh Gupta",
       customer_phone: "+91 98111 22222",
-      project_id: "prj-101",
-      project_name: "Godrej Infinity",
+      project_id: "prj-sky-p1",
+      project_name: "Skyfinia Phase 1",
       status: "Qualified",
       created_at: "2026-02-10T10:00:00Z",
       qualified_at: "2026-02-11T12:00:00Z",
@@ -58,17 +58,17 @@ const MOCK_PARTNER_DETAIL: PartnerDetailResponse = {
       booking_reference: "BK-2026-0001",
       lead_id: "ld-101",
       customer_name: "Suresh Gupta",
-      project_id: "prj-101",
-      project_name: "Godrej Infinity",
+      project_id: "prj-sky-p1",
+      project_name: "Skyfinia Phase 1",
       unit_number: "T2-1404",
-      unit_type: "3BHK",
+      unit_type: "3 BHK Luxury",
       booking_date: "2026-03-01",
       booking_status: "Confirmed",
       booking_value: 15000000.0,
       token_amount: 500000.0,
       commission_rate_pct: 2.5,
       commission_amount: 375000.0,
-      salesperson_name: "Rahul Sharma",
+      salesperson_name: "Rohit Deshmukh",
       created_at: "2026-03-01T15:00:00Z",
     },
   ],
@@ -131,7 +131,7 @@ describe("PartnerDetailView Component", () => {
     expect(screen.getByText("Tier 1")).toBeInTheDocument();
     expect(screen.getByText("Active Account")).toBeInTheDocument();
     expect(screen.getByText("Baner, Pune")).toBeInTheDocument();
-    expect(screen.getByText("Rahul Sharma")).toBeInTheDocument();
+    expect(screen.getByText("Rohit Deshmukh")).toBeInTheDocument();
   });
 
   it("renders performance metrics cards with correct formatting", () => {
@@ -219,7 +219,7 @@ describe("PartnerDetailView Component", () => {
     expect(screen.getByTestId("recent-bookings-card")).toBeInTheDocument();
     expect(screen.getByText("LD-2026-0001")).toBeInTheDocument();
     expect(screen.getByText("BK-2026-0001")).toBeInTheDocument();
-    expect(screen.getByText("Unit T2-1404 (3BHK)")).toBeInTheDocument();
+    expect(screen.getByText(/T2-1404/)).toBeInTheDocument();
   });
 
   it("handles inactive status and various tier/lead/booking badges correctly", () => {

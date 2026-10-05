@@ -419,7 +419,7 @@ Lists executed bookings and unit closure transactions.
   - `ACTIVE_BOOKING_STATUSES`: `Initiated`, `Confirmed` (at most 1 active booking per lead at any time).
   - `TERMINAL_BOOKING_STATUSES`: `Completed`, `Cancelled` (historical records; do not count as concurrent active bookings).
 - **Synthetic Data Disclaimer**:
-  - `commission_rate_pct` (2.0%) and `commission_amount` are demo sample values and do NOT represent Hariwishwa's actual commission policy.
+  - `commission_rate_pct` (2.0%) and `commission_amount` are demo sample values and do NOT represent Harivishva's actual commission policy.
 - **Success Response (`200 OK`)**:
 ```json
 {

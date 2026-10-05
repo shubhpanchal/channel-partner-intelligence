@@ -9,7 +9,7 @@
 ## 1. Product Purpose & Executive Principles
 
 ### 1.1 Core Mission
-**Channel Partner Intelligence** is a specialized analytical and decision-support platform designed for real estate developers (e.g., Hariwishwa) and distribution heads. It provides executive visibility into channel partner (broker/agency) networks, inbound lead attribution, property site visit conversions, and booking velocity.
+**Channel Partner Intelligence** is a specialized analytical and decision-support platform designed for real estate developers (e.g., Harivishva) and distribution heads. It provides executive visibility into channel partner (broker/agency) networks, inbound lead attribution, property site visit conversions, and booking velocity.
 
 ### 1.2 The Intelligence Loop
 Unlike a transactional customer relationship management (CRM) tool that focuses on individual record entry and sales rep workflows, Channel Partner Intelligence transforms transactional data into executive clarity:
@@ -213,7 +213,7 @@ Represents an executed transactional agreement and token payment for a specific 
 2. **Active Booking Invariant**: A lead may not have more than **one concurrent active booking** (status `Initiated` or `Confirmed`).
 3. **Terminal Records**: `Completed` and `Cancelled` records are historical/terminal records and do **NOT** count as concurrent active bookings.
 4. **Commission Assumption Disclaimer**:
-   > **Synthetic Data Notice**: The default `2.0%` base commission rate and computed commission amounts are synthetic sample/demo data assumptions used for analytical pipeline modeling only. They do **NOT** represent Hariwishwa's actual commercial commission policy or partner contract terms.
+   > **Synthetic Data Notice**: The default `2.0%` base commission rate and computed commission amounts are synthetic sample/demo data assumptions used for analytical pipeline modeling only. They do **NOT** represent Harivishva's actual commercial commission policy or partner contract terms.
 
 ---
 

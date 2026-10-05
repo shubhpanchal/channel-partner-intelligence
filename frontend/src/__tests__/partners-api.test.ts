@@ -28,7 +28,7 @@ describe("Partners API Client", () => {
           active: true,
           tier: "Tier 1",
           channel_type: "Corporate Agency",
-          assigned_salesperson: { id: "sp-101", name: "Rahul Sharma" },
+          assigned_salesperson: { id: "sp-101", name: "Rohit Deshmukh" },
           summary_stats: {
             total_leads: 50,
             qualified_leads: 35,
@@ -40,10 +40,10 @@ describe("Partners API Client", () => {
         },
       ],
       pagination: {
-        total: 175,
+        total: 36,
         page: 1,
         page_size: 20,
-        total_pages: 9,
+        total_pages: 2,
       },
     };
 
@@ -58,7 +58,7 @@ describe("Partners API Client", () => {
       expect.objectContaining({ method: "GET" })
     );
     expect(result.items.length).toBe(1);
-    expect(result.pagination.total).toBe(175);
+    expect(result.pagination.total).toBe(36);
   });
 
   it("appends query filters correctly", async () => {

@@ -100,36 +100,36 @@ def test_overview_summary_canonical_seed_42_values(seeded_client: TestClient):
 
     # 1. Lead Flow Metrics
     lead_flow = kpis["channel_lead_flow"]
-    assert lead_flow["total_leads"] == 1230
-    assert lead_flow["valid_leads"] == 1211
-    assert lead_flow["value"] == 1211
-    assert lead_flow["qualified_leads"] == 919
-    assert lead_flow["qualification_rate_pct"] == 75.89
+    assert lead_flow["total_leads"] == 1262
+    assert lead_flow["valid_leads"] == 1238
+    assert lead_flow["value"] == 1238
+    assert lead_flow["qualified_leads"] == 956
+    assert lead_flow["qualification_rate_pct"] == 77.22
 
     # 2. Site Visit Metrics
     site_visits = kpis["site_visits"]
-    assert site_visits["total_scheduled"] == 704
-    assert site_visits["total_completed"] == 606
-    assert site_visits["visit_completion_rate_pct"] == 86.08
-    assert site_visits["unique_visited_leads"] == 507
-    assert site_visits["qualified_lead_to_visit_rate_pct"] == 55.17
+    assert site_visits["total_scheduled"] == 728
+    assert site_visits["total_completed"] == 625
+    assert site_visits["visit_completion_rate_pct"] == 85.85
+    assert site_visits["unique_visited_leads"] == 510
+    assert site_visits["qualified_lead_to_visit_rate_pct"] == 53.35
 
     # 3. Bookings Velocity Metrics
     bookings = kpis["bookings_velocity"]
-    assert bookings["units_count"] == 139
-    assert bookings["confirmed_bookings"] == 139
-    assert bookings["confirmed_from_visited_leads"] == 129
-    assert bookings["direct_confirmed_bookings"] == 10
-    assert bookings["visit_to_booking_rate_pct"] == 25.44
-    assert bookings["overall_conversion_rate_pct"] == 11.48
+    assert bookings["units_count"] == 156
+    assert bookings["confirmed_bookings"] == 156
+    assert bookings["confirmed_from_visited_leads"] == 151
+    assert bookings["direct_confirmed_bookings"] == 5
+    assert bookings["visit_to_booking_rate_pct"] == 29.61
+    assert bookings["overall_conversion_rate_pct"] == 12.60
     assert bookings["total_value_inr"] > 1_000_000_000.00
 
     # 4. Active Partners & Trailing-90-Day Breakdown
     active_partners = kpis["active_partners"]
-    assert active_partners["value"] == 28
+    assert active_partners["value"] == 30
     assert active_partners["breakdown"]["tier_1"] == 6
     assert active_partners["breakdown"]["tier_2"] == 8
-    assert active_partners["breakdown"]["tier_3"] == 14
+    assert active_partners["breakdown"]["tier_3"] == 16
 
     # 5. Partner Tier Distribution (All 36 registered partners)
     tier_breakdown = data["tier_breakdown"]
@@ -195,7 +195,7 @@ def test_milestone_qualification_preservation(seeded_db_session: Session):
     assert lost_qualified > 0, "Expected some leads to be lost after historical qualification"
 
     summary = get_overview_summary(seeded_db_session)
-    assert summary.kpis.channel_lead_flow.qualified_leads == 919
+    assert summary.kpis.channel_lead_flow.qualified_leads == 956
 
 
 def test_invalid_leads_excluded_from_valid_count(seeded_db_session: Session):
@@ -205,8 +205,8 @@ def test_invalid_leads_excluded_from_valid_count(seeded_db_session: Session):
         .filter(Lead.status == "Invalid")
         .count()
     )
-    assert invalid_count == 19
-    assert 1230 - invalid_count == 1211
+    assert invalid_count == 24
+    assert 1262 - invalid_count == 1238
 
 
 def test_direct_bookings_excluded_from_visit_to_booking_rate(seeded_db_session: Session):
@@ -214,9 +214,9 @@ def test_direct_bookings_excluded_from_visit_to_booking_rate(seeded_db_session: 
     from app.services.overview_service import get_overview_summary
 
     summary = get_overview_summary(seeded_db_session)
-    assert summary.kpis.bookings_velocity.direct_confirmed_bookings == 10
-    assert summary.kpis.bookings_velocity.confirmed_from_visited_leads == 129
-    assert summary.kpis.bookings_velocity.visit_to_booking_rate_pct == 25.44
+    assert summary.kpis.bookings_velocity.direct_confirmed_bookings == 5
+    assert summary.kpis.bookings_velocity.confirmed_from_visited_leads == 151
+    assert summary.kpis.bookings_velocity.visit_to_booking_rate_pct == 29.61
 
 
 # ==============================================================================

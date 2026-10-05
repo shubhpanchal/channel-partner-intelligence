@@ -169,7 +169,7 @@ export function Sidebar({ activeKey, onSelect, isOpen, onClose }: SidebarProps) 
                 Executive Admin
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                Hariwishwa Channel Ops
+                Harivishva Channel Ops
               </p>
             </div>
           </div>

@@ -131,7 +131,7 @@ def calculate_synthetic_demo_commission(
 
     DISCLAIMER:
     The 2.0% base commission assumption is synthetic/demo data only and is NOT
-    Hariwishwa's actual commercial commission policy or partner agreement structure.
+    Harivishva's actual commercial commission policy or partner agreement structure.
     """
     if booking_value <= 0 or rate_pct < 0:
         return {

@@ -28,7 +28,7 @@ def test_create_salesperson(db_session):
     sp = Salesperson(
         id="SP-0001",
         name="Aarav Sharma",
-        email="aarav.sharma@hariwishwa.com",
+        email="aarav.sharma@harivishva.com",
         phone="+91-9876543210",
         team="Sales - Baner",
         active=True,
@@ -47,7 +47,7 @@ def test_create_project(db_session):
     proj = Project(
         id="PRJ-0001",
         project_code="HWM",
-        name="Hariwishwa Meadows",
+        name="Harivishva Meadows",
         project_type="Residential",
         location="Baner, Pune",
         city="Pune",

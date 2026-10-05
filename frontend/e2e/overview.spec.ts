@@ -19,19 +19,19 @@ test.describe("Overview Summary API & Real Dashboard Integration (Phase 2C-1)", 
     // Verify 4 Real KPI Cards rendered with database-backed values
     const activePartnersCard = page.getByTestId("kpi-card-active-partners");
     await expect(activePartnersCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-active-partners")).toHaveText("28");
+    await expect(page.getByTestId("kpi-value-active-partners")).toHaveText("30");
 
     const leadFlowCard = page.getByTestId("kpi-card-lead-flow");
     await expect(leadFlowCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-lead-flow")).toHaveText("1,211");
+    await expect(page.getByTestId("kpi-value-lead-flow")).toHaveText("1,238");
 
     const visitConversionCard = page.getByTestId("kpi-card-visit-conversion");
     await expect(visitConversionCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-visit-conversion")).toHaveText("55.2%");
+    await expect(page.getByTestId("kpi-value-visit-conversion")).toHaveText("53.4%");
 
     const bookingsVelocityCard = page.getByTestId("kpi-card-bookings-velocity");
     await expect(bookingsVelocityCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-bookings-velocity")).toHaveText("139 Units");
+    await expect(page.getByTestId("kpi-value-bookings-velocity")).toHaveText("156 Units");
 
     // Verify Partner Tier Breakdown
     const tierCard = page.getByTestId("card-partner-tier-breakdown");

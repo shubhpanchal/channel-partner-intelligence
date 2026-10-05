@@ -50,10 +50,10 @@ The **Executive Overview** is your real-time command center for monitoring Hariv
 > **Demo Environment Indicator**: A subtle, persistent indicator (`Demo Environment · Synthetic Data`) informs stakeholders that all data is mathematically synthesized for simulation and preview purposes.
 
 - **Key Performance Indicators (KPI Cards)**:
-  - **Active Partners (28)**: Active brokers who logged $\ge 1$ qualifying activity within the trailing 90-day window, broken down by performance tier (Tier 1: 6, Tier 2: 8, Tier 3: 14).
-  - **Channel Lead Flow (1,211)**: Valid leads received from partners across Skyfinia and Infinia, showing milestone qualification count (919 qualified leads) and overall qualification efficiency (75.9%).
-  - **Visit Conversion (55.2%)**: Percentage of qualified leads who completed at least one verified property site visit in Tathawade (507 unique visited prospects out of 606 completed visits).
-  - **Bookings Velocity (139 Units / ₹123.6 Cr)**: Total confirmed unit closures generated through the channel network, showing visit-to-booking efficiency (25.4%) and total revenue value.
+  - **Active Partners (30)**: Active brokers who logged $\ge 1$ qualifying activity within the trailing 90-day window, broken down by performance tier (Tier 1: 6, Tier 2: 8, Tier 3: 16).
+  - **Channel Lead Flow (1,238)**: Valid leads received from partners across Skyfinia and Infinia, showing milestone qualification count (956 qualified leads) and overall qualification efficiency (77.2%).
+  - **Visit Conversion (53.4%)**: Percentage of qualified leads who completed at least one verified property site visit in Tathawade (510 unique visited prospects out of 625 completed visits).
+  - **Bookings Velocity (156 Units / ₹155.8 Cr)**: Total confirmed unit closures generated through the channel network, showing visit-to-booking efficiency (29.6%) and total revenue value.
 - **Pipeline Velocity Trends**: Real-time month-by-month progression comparing inbound lead volume against completed property tours and finalized bookings across 2026.
 - **Partner Tier Breakdown**: Live distribution of all 36 registered partner firms across performance tiers: Tier 1 Elite (6 firms, 16.7%), Tier 2 Growth (10 firms, 27.8%), and Tier 3 Active (20 firms, 55.6%).
 - **Recent Channel Activity**: Live stream of verified actions (lead submissions, site visits, booking tokens, and tier changes) logged in the database audit ledger for Skyfinia and Infinia.
@@ -65,7 +65,7 @@ The **Executive Overview** is your real-time command center for monitoring Hariv
 A focused enterprise management view of 36 channel partners servicing Harivishva's Tathawade developments, powered by real-time database queries, portfolio-first card presentation, and in-depth visual analytics.
 
 - **Portfolio Summary Context Strip**:
-  - Live network-wide metrics displayed above the partner deck: Total Partners (36), Trailing 90-Day Active Partners (28), Tier 1 Elite (6), Tier 2 Growth (10), and Tier 3 Active (20).
+  - Live network-wide metrics displayed above the partner deck: Total Partners (36), Trailing 90-Day Active Partners (30), Tier 1 Elite (6), Tier 2 Growth (10), and Tier 3 Active (20).
 - **Cards vs. List View Toggle**:
   - **Cards View (Default)**: Visual portfolio grid (3 cards/row desktop, 2 cards/row tablet, 1 card/row mobile) designed for executive scanning. Each card surfaces identity, tier badge, active status, operational city/locality (Tathawade, Wakad, Hinjawadi, Ravet, Punawale, Baner), assigned relationship manager, lead/visit/booking volume chips, overall conversion percentage, and visit-to-booking efficiency.
   - **List View**: High-density operational data table providing tabular comparison and granular column alignment.

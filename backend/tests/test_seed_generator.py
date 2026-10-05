@@ -261,3 +261,104 @@ def test_synthetic_data_date_boundaries():
     # Partner activities
     for act in data["partner_activities"]:
         assert min_dt <= act["logged_at"] <= max_dt
+
+
+def test_authoritative_salespeople_identities_and_emails():
+    """Verify that the synthetic dataset contains exactly 5 authoritative managers."""
+    from app.seed.constants import (
+        AUTHORITATIVE_MANAGER_EMAILS,
+        AUTHORITATIVE_MANAGER_NAMES,
+    )
+
+    data = generate_synthetic_dataset(seed=42)
+    salespeople = data["salespeople"]
+
+    assert len(salespeople) == 5
+
+    actual_names = {sp["name"] for sp in salespeople}
+    actual_emails = {sp["email"] for sp in salespeople}
+
+    expected_managers = {
+        "Rohit Deshmukh": "rohit.deshmukh@harivishva.com",
+        "Sneha Kulkarni": "sneha.kulkarni@harivishva.com",
+        "Amit Patil": "amit.patil@harivishva.com",
+        "Priya Joshi": "priya.joshi@harivishva.com",
+        "Rahul Shinde": "rahul.shinde@harivishva.com",
+    }
+
+    assert actual_names == set(expected_managers.keys())
+    assert actual_emails == set(expected_managers.values())
+    assert actual_names == AUTHORITATIVE_MANAGER_NAMES
+    assert actual_emails == AUTHORITATIVE_MANAGER_EMAILS
+
+    # Verify salesperson IDs in channel partners and leads map to valid managers
+    valid_sp_ids = {sp["id"] for sp in salespeople}
+    for cp in data["channel_partners"]:
+        assert cp["assigned_salesperson_id"] in valid_sp_ids
+    for ld in data["leads"]:
+        assert ld["assigned_salesperson_id"] in valid_sp_ids
+
+
+def test_project_starting_prices_and_families():
+    """Verify that project records match Harivishva Tathawade specifications and starting prices."""
+    from decimal import Decimal
+
+    data = generate_synthetic_dataset(seed=42)
+    projects = {p["id"]: p for p in data["projects"]}
+
+    assert len(projects) == 4
+
+    # Verify Skyfinia Phase 1
+    assert projects["prj-sky-p1"]["name"] == "Skyfinia Phase 1"
+    assert projects["prj-sky-p1"]["starting_price"] == Decimal("8800000.00")
+    assert projects["prj-sky-p1"]["location"] == "Tathawade"
+    assert projects["prj-sky-p1"]["city"] == "Pune"
+
+    # Verify Skyfinia Phase 2
+    assert projects["prj-sky-p2"]["name"] == "Skyfinia Phase 2"
+    assert projects["prj-sky-p2"]["starting_price"] == Decimal("9500000.00")
+    assert projects["prj-sky-p2"]["location"] == "Tathawade"
+    assert projects["prj-sky-p2"]["city"] == "Pune"
+
+    # Verify Infinia Phase 1
+    assert projects["prj-inf-p1"]["name"] == "Infinia Phase 1"
+    assert projects["prj-inf-p1"]["starting_price"] == Decimal("8200000.00")
+    assert projects["prj-inf-p1"]["location"] == "Tathawade"
+    assert projects["prj-inf-p1"]["city"] == "Pune"
+
+    # Verify Infinia Phase 2
+    assert projects["prj-inf-p2"]["name"] == "Infinia Phase 2"
+    assert projects["prj-inf-p2"]["starting_price"] == Decimal("8900000.00")
+    assert projects["prj-inf-p2"]["location"] == "Tathawade"
+    assert projects["prj-inf-p2"]["city"] == "Pune"
+
+
+def test_synthetic_booking_pricing_rule_and_floor_invariant():
+    """Verify calculate_synthetic_booking_value helper and strict pricing floor invariant."""
+    from decimal import Decimal
+
+    from app.seed.generator import calculate_synthetic_booking_value
+
+    # 1. Test unit pricing helper
+    base_price = Decimal("8800000.00")
+    # Base 2 BHK Smart
+    val_smart = calculate_synthetic_booking_value(base_price, "2 BHK Smart", variance_tier=0)
+    assert val_smart == Decimal("8800000.00")
+    assert val_smart >= base_price
+
+    # 3 BHK Luxury with variance
+    val_luxury = calculate_synthetic_booking_value(base_price, "3 BHK Luxury", variance_tier=2)
+    assert val_luxury == Decimal("8800000.00") + Decimal("1200000.00") + Decimal("200000.00")
+    assert val_luxury == Decimal("10200000.00")
+    assert val_luxury >= base_price
+
+    # 2. Test 100% of generated bookings in Seed 42 dataset
+    data = generate_synthetic_dataset(seed=42)
+    project_starting_prices = {p["id"]: p["starting_price"] for p in data["projects"]}
+
+    assert len(data["bookings"]) > 0
+    for bk in data["bookings"]:
+        proj_floor = project_starting_prices[bk["project_id"]]
+        assert bk["booking_value"] >= proj_floor, (
+            f"Booking {bk['id']} value {bk['booking_value']} below floor {proj_floor}"
+        )

@@ -139,7 +139,7 @@ export function Header({ title, subtitle, onOpenSidebar }: HeaderProps) {
             <DropdownMenuLabel>
               <p className="text-xs font-semibold text-foreground">Admin User</p>
               <p className="text-[11px] font-normal text-muted-foreground">
-                admin@hariwishwa.com
+                admin@harivishva.com
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

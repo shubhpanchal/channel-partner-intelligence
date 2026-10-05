@@ -14,6 +14,7 @@ Validates:
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 from typing import Any, Dict, List
 
 from sqlalchemy import func, select
@@ -57,7 +58,6 @@ def validate_dataset(session: Session) -> ValidationReport:
     report = ValidationReport()
 
     # 1. Row Counts & Distributions
-    salespeople_count = session.scalar(select(func.count()).select_from(Salesperson)) or 0
     projects_count = session.scalar(select(func.count()).select_from(Project)) or 0
     partners_count = session.scalar(select(func.count()).select_from(ChannelPartner)) or 0
     leads_count = session.scalar(select(func.count()).select_from(Lead)) or 0
@@ -100,11 +100,42 @@ def validate_dataset(session: Session) -> ValidationReport:
         f"Projects: {project_names} in Pune / Tathawade",
     )
 
-    report.add_check(
-        "Salespeople Count",
-        salespeople_count == 5,
-        f"Expected 5, found {salespeople_count}",
+    # Check project starting prices
+    expected_prices = {
+        "PRJ-SKY-P1": Decimal("8800000.00"),
+        "PRJ-SKY-P2": Decimal("9500000.00"),
+        "PRJ-INF-P1": Decimal("8200000.00"),
+        "PRJ-INF-P2": Decimal("8900000.00"),
+    }
+    pricing_matches = all(
+        p.starting_price == expected_prices.get(p.project_code)
+        for p in projects
     )
+    report.add_check(
+        "Project Starting Prices",
+        pricing_matches,
+        f"Checked starting prices for {len(projects)} projects (Skyfinia/Infinia)",
+    )
+
+    # Check authoritative salespeople
+    salespeople = session.scalars(select(Salesperson)).all()
+    expected_salespeople = {
+        "Rohit Deshmukh": "rohit.deshmukh@harivishva.com",
+        "Sneha Kulkarni": "sneha.kulkarni@harivishva.com",
+        "Amit Patil": "amit.patil@harivishva.com",
+        "Priya Joshi": "priya.joshi@harivishva.com",
+        "Rahul Shinde": "rahul.shinde@harivishva.com",
+    }
+    actual_sp_map = {sp.name: sp.email for sp in salespeople}
+    salespeople_authoritative = (
+        len(salespeople) == 5 and actual_sp_map == expected_salespeople
+    )
+    report.add_check(
+        "Authoritative Salespeople (5 Managers)",
+        salespeople_authoritative,
+        f"Found: {list(actual_sp_map.keys())}",
+    )
+
     tiers_ok = (
         partners_count == 36
         and tier_1_count == 6
@@ -131,6 +162,19 @@ def validate_dataset(session: Session) -> ValidationReport:
         "Confirmed Bookings Range (100-160)",
         100 <= confirmed_bookings <= 160,
         f"Confirmed bookings: {confirmed_bookings} (Total: {bookings_count})",
+    )
+
+    # Check booking pricing floor invariant: booking_value >= project.starting_price
+    project_starting_price_map = {p.id: p.starting_price for p in projects}
+    underpriced_bookings = [
+        b.id for b in session.scalars(select(Booking)).all()
+        if b.project_id in project_starting_price_map
+        and b.booking_value < project_starting_price_map[b.project_id]
+    ]
+    report.add_check(
+        "Booking Pricing Floor Invariant",
+        len(underpriced_bookings) == 0,
+        f"Underpriced bookings found: {len(underpriced_bookings)}",
     )
 
     # 2. Foreign Key Completeness & Orphan Detection

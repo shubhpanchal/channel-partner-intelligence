@@ -36,7 +36,18 @@ All projects are situated in **Tathawade, Pune** with target configurations (2 B
 
 ---
 
-### 2.2 Entity Counts & Canonical Seed 42 Benchmark
+### 2.2 Authoritative Sales / Relationship Managers (5 Records)
+
+The demo environment features exactly 5 authoritative Harivishva relationship managers:
+1. **Rohit Deshmukh** (`rohit.deshmukh@harivishva.com`)
+2. **Sneha Kulkarni** (`sneha.kulkarni@harivishva.com`)
+3. **Amit Patil** (`amit.patil@harivishva.com`)
+4. **Priya Joshi** (`priya.joshi@harivishva.com`)
+5. **Rahul Shinde** (`rahul.shinde@harivishva.com`)
+
+---
+
+### 2.3 Entity Counts & Canonical Seed 42 Benchmark
 
 When initialized with `SEED = 42`, the generator yields the exact canonical dataset:
 
@@ -48,19 +59,19 @@ When initialized with `SEED = 42`, the generator yields the exact canonical data
 | ↳ *Tier 1 (Elite)* | 6 | **6** (16.7%) | Pass |
 | ↳ *Tier 2 (Growth)* | 10 | **10** (27.8%) | Pass |
 | ↳ *Tier 3 (Active)* | 20 | **20** (55.6%) | Pass |
-| **Leads** | 1,200 – 1,500 | **1,230** total records | Pass |
-| ↳ *Valid Leads (`status != 'Invalid'`)* | — | **1,211** (98.5%) | Pass |
-| ↳ *Qualified Leads (`qualified_at IS NOT NULL`)* | — | **919** (75.89% qualification rate) | Pass |
-| **Site Visits** | 500 – 800 | **704** total scheduled | Pass |
-| ↳ *Completed Site Visits* | 600 – 750 | **606** (86.08% completion rate) | Pass |
-| ↳ *Unique Visited Leads* | — | **507** (55.17% qualified $\rightarrow$ visit rate) | Pass |
-| **Bookings** | 100 – 150 Confirmed | **148** total booking records | Pass |
-| ↳ *Confirmed / Completed Bookings* | 100 – 150 | **139** | Pass |
-| ↳ *Visited Leads Confirmed Bookings* | — | **129** (25.44% visit $\rightarrow$ booking rate) | Pass |
-| ↳ *Direct Confirmed Bookings (No Site Visit)* | — | **10** (7.2% of confirmed) | Pass |
-| ↳ *Initiated Bookings (In Pipeline)* | — | **2** | Pass |
-| ↳ *Cancelled Booking Records* | — | **7** (Historical audit trail) | Pass |
-| **Partner Activities** | Sufficient audit volume | **1,957** activity logs | Pass |
+| **Leads** | 1,200 – 1,500 | **1,262** total records | Pass |
+| ↳ *Valid Leads (`status != 'Invalid'`)* | — | **1,238** (98.1%) | Pass |
+| ↳ *Qualified Leads (`qualified_at IS NOT NULL`)* | — | **956** (77.22% qualification rate) | Pass |
+| **Site Visits** | 500 – 800 | **728** total scheduled | Pass |
+| ↳ *Completed Site Visits* | 600 – 750 | **625** (85.85% completion rate) | Pass |
+| ↳ *Unique Visited Leads* | — | **510** (53.35% qualified $\rightarrow$ visit rate) | Pass |
+| **Bookings** | 100 – 160 Confirmed | **174** total booking records | Pass |
+| ↳ *Confirmed / Completed Bookings* | 100 – 160 | **156** | Pass |
+| ↳ *Visited Leads Confirmed Bookings* | — | **151** (29.61% visit $\rightarrow$ booking rate) | Pass |
+| ↳ *Direct Confirmed Bookings (No Site Visit)* | — | **5** (3.2% of confirmed) | Pass |
+| ↳ *Initiated Bookings (In Pipeline)* | — | **6** | Pass |
+| ↳ *Cancelled Booking Records* | — | **12** (Historical audit trail) | Pass |
+| **Partner Activities** | Sufficient audit volume | **2,037** activity logs | Pass |
 
 ---
 
@@ -130,11 +141,20 @@ pie title Partner Tier Distribution (36 Total)
 - `qualified_at` is permanently retained for all leads that achieved qualification, even if the lead later transitions to `Lost`.
 
 ### 4.3 Direct Booking Isolation
-- Direct bookings (10 units in Seed 42) are cleanly excluded from the **Visit $\rightarrow$ Booking Rate**:
-  $$\text{Visit to Booking Rate} = \frac{129 \text{ visited confirmed bookings}}{507 \text{ unique visited leads}} = 25.44\%$$
+- Direct bookings (5 units in Seed 42) are cleanly excluded from the **Visit $\rightarrow$ Booking Rate**:
+  $$\text{Visit to Booking Rate} = \frac{151 \text{ visited confirmed bookings}}{510 \text{ unique visited leads}} = 29.61\%$$
 
 ### 4.4 Active Booking Invariant
 - A SQLite partial unique index enforces at most 1 active booking (`Initiated` or `Confirmed`) per lead.
+
+### 4.5 Synthetic Project Pricing Rule & Floor Invariant
+- Every booking agreement value is derived deterministically from the project's base starting price, unit configuration premium, and unit variance tier:
+  $$\text{Booking Value} = \text{RoundToLakh}(\text{Starting Price} \times (1 + \text{Config Premium}) + \text{Variance Add-on})$$
+- **Invariant**: $\text{Booking Value} \ge \text{Project Starting Price}$ for 100% of generated records.
+  - Skyfinia Phase 1: $\ge ₹88.0\text{ Lakh}$
+  - Skyfinia Phase 2: $\ge ₹95.0\text{ Lakh}$
+  - Infinia Phase 1: $\ge ₹82.0\text{ Lakh}$
+  - Infinia Phase 2: $\ge ₹89.0\text{ Lakh}$
 
 ---
 

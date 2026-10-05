@@ -52,7 +52,7 @@ def test_validator_detects_count_errors(db_session):
 
     assert report.passed is False
     assert any("Projects Count" in e for e in report.errors)
-    assert any("Salespeople Count" in e for e in report.errors)
+    assert any("Authoritative Salespeople" in e for e in report.errors)
 
 
 def test_validator_detects_cross_entity_mismatch(db_session):

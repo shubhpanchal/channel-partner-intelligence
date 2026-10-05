@@ -37,8 +37,9 @@ test.describe("Channel Partners Portfolio & Analytics (Phase 2C-2)", () => {
     // Wait for search result card to filter down
     await expect(page.getByTestId("partner-card-cp-1001")).toBeVisible({ timeout: 5000 });
 
-    // Clear search
+    // Clear search and wait for debounce to settle
     await searchInput.clear();
+    await page.waitForTimeout(400);
 
     // 6. Apply Tier 1 filter
     const tierFilter = page.getByTestId("partners-tier-filter");
@@ -47,14 +48,19 @@ test.describe("Channel Partners Portfolio & Analytics (Phase 2C-2)", () => {
 
     // Reset tier filter
     await tierFilter.selectOption("");
+    await expect(page.getByText("Tier: Tier 1")).not.toBeVisible();
+    await expect(page.getByTestId("pagination-page-indicator")).toHaveText("Page 1 of 2");
 
     // 7. Test Pagination navigation to Page 2
     const nextBtn = page.getByTestId("pagination-next-btn");
     await expect(nextBtn).toBeVisible();
+    await expect(nextBtn).toBeEnabled();
     await nextBtn.click();
     await expect(page.getByTestId("pagination-page-indicator")).toHaveText("Page 2 of 2");
 
     const prevBtn = page.getByTestId("pagination-prev-btn");
+    await expect(prevBtn).toBeVisible();
+    await expect(prevBtn).toBeEnabled();
     await prevBtn.click();
     await expect(page.getByTestId("pagination-page-indicator")).toHaveText("Page 1 of 2");
 

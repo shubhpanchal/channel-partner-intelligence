@@ -40,7 +40,28 @@ from app.seed.constants import (
     PUNE_LOCALITIES,
     SALESPEOPLE_TEMPLATES,
     SEED,
+    UNIT_TYPE_PREMIUMS,
 )
+
+
+def calculate_synthetic_booking_value(
+    project_starting_price: Decimal,
+    unit_type: str | None = None,
+    variance_tier: int = 0,
+) -> Decimal:
+    """Calculate synthetic booking agreement value according to documented pricing rules.
+
+    Pricing Rule:
+    1. Baseline Floor: project.starting_price (strictly enforced minimum floor)
+    2. Unit Configuration Premium: layout-based increment (e.g. 3 BHK Luxury vs 2 BHK Smart)
+    3. Floor / View Factor: floor-rise / elevation factor (variance_tier * 100,000)
+
+    Invariant:
+    booking_value >= project_starting_price (strictly enforced across 100% of bookings).
+    """
+    unit_premium = UNIT_TYPE_PREMIUMS.get(unit_type or "", Decimal("0.00"))
+    floor_variance = Decimal(str(variance_tier * 100000))
+    return project_starting_price + unit_premium + floor_variance
 
 
 def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any]]]:
@@ -440,7 +461,11 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                 booking_id = f"bk-{booking_id_counter:06d}"
                 booking_ref = f"BK-2026-{booking_id_counter:06d}"
                 booking_date = converted_at.date()
-                booking_val = proj_tmpl["starting_price"] + Decimal(str(rng.randint(0, 5) * 500000))
+                booking_val = calculate_synthetic_booking_value(
+                    project_starting_price=proj_tmpl["starting_price"],
+                    unit_type=req_type,
+                    variance_tier=rng.randint(0, 4),
+                )
                 token_amt = Decimal("200000.00")
                 comm_pct = Decimal("2.0")
                 comm_amt = Decimal(str(round((float(booking_val) * 2.0) / 100.0, 2)))
@@ -613,7 +638,11 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                             # 1st Booking: Cancelled
                             bk_cancelled_id = f"bk-{booking_id_counter:06d}"
                             bk_cancelled_ref = f"BK-2026-{booking_id_counter:06d}"
-                            val_cancelled = proj_tmpl["starting_price"]
+                            val_cancelled = calculate_synthetic_booking_value(
+                                project_starting_price=proj_tmpl["starting_price"],
+                                unit_type=req_type,
+                                variance_tier=0,
+                            )
                             comm_canc = Decimal(
                                 str(round((float(val_cancelled) * 2.0) / 100.0, 2))
                             )
@@ -650,8 +679,11 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                         # Active / Confirmed / Completed Booking
                         booking_id = f"bk-{booking_id_counter:06d}"
                         booking_ref = f"BK-2026-{booking_id_counter:06d}"
-                        val_add = Decimal(str(rng.randint(0, 6) * 400000))
-                        booking_val = proj_tmpl["starting_price"] + val_add
+                        booking_val = calculate_synthetic_booking_value(
+                            project_starting_price=proj_tmpl["starting_price"],
+                            unit_type=req_type,
+                            variance_tier=rng.randint(0, 4),
+                        )
                         token_amt = Decimal("250000.00")
                         comm_pct = Decimal("2.0")
                         comm_amt = Decimal(str(round((float(booking_val) * 2.0) / 100.0, 2)))
