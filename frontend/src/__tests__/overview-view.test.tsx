@@ -1,83 +1,260 @@
 import React from "react";
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import {
-  OverviewView,
-  SAMPLE_PARTNER_TIERS_RAW,
-  TOTAL_SAMPLE_PARTNERS,
-  SAMPLE_PARTNER_TIERS,
-} from "@/components/dashboard/overview-view";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { OverviewView } from "@/components/dashboard/overview-view";
+import * as overviewHook from "@/hooks/use-overview-summary";
+import { OverviewSummaryResponse } from "@/lib/api/overview";
+
+const MOCK_OVERVIEW_DATA: OverviewSummaryResponse = {
+  kpis: {
+    active_partners: {
+      value: 152,
+      growth_pct: 12.4,
+      breakdown: {
+        tier_1: 18,
+        tier_2: 40,
+        tier_3: 94,
+      },
+    },
+    channel_lead_flow: {
+      value: 3906,
+      total_leads: 4018,
+      valid_leads: 3906,
+      qualified_leads: 2891,
+      qualification_rate_pct: 74.01,
+      growth_pct: 18.2,
+    },
+    site_visits: {
+      total_scheduled: 2010,
+      total_completed: 1743,
+      visit_completion_rate_pct: 86.72,
+      unique_visited_leads: 1472,
+      qualified_lead_to_visit_rate_pct: 50.92,
+      growth_pct: 4.1,
+    },
+    bookings_velocity: {
+      units_count: 454,
+      confirmed_bookings: 454,
+      confirmed_from_visited_leads: 440,
+      direct_confirmed_bookings: 14,
+      total_value_inr: 4385100000.0,
+      visit_to_booking_rate_pct: 29.89,
+      overall_conversion_rate_pct: 11.62,
+      growth_pct: 23.0,
+    },
+  },
+  tier_breakdown: [
+    {
+      tier: "Tier 1 (Elite)",
+      partners_count: 18,
+      percentage: 10.3,
+      contribution: "10.3%",
+    },
+    {
+      tier: "Tier 2 (Growth)",
+      partners_count: 45,
+      percentage: 25.7,
+      contribution: "25.7%",
+    },
+    {
+      tier: "Tier 3 (Active)",
+      partners_count: 112,
+      percentage: 64.0,
+      contribution: "64.0%",
+    },
+  ],
+  monthly_trends: [
+    {
+      month: "Jan",
+      leads: 304,
+      site_visits: 111,
+      bookings: 22,
+    },
+    {
+      month: "Feb",
+      leads: 287,
+      site_visits: 98,
+      bookings: 23,
+    },
+  ],
+  recent_activities: [
+    {
+      id: "act-1",
+      partner_name: "Apex Real Estate Advisors",
+      action: "Booking confirmed for Rajesh Kale.",
+      logged_at: "2027-01-21T13:51:00Z",
+      time_ago: "2h ago",
+      status: "success",
+      tag: "Booking",
+    },
+    {
+      id: "act-2",
+      partner_name: "Horizon Property Consultants",
+      action: "Site visit completed for Siddharth More.",
+      logged_at: "2027-01-10T03:59:00Z",
+      time_ago: "11d ago",
+      status: "success",
+      tag: "Site Visit",
+    },
+  ],
+  attention_alerts: [
+    {
+      id: "alert-inv-prj-101",
+      title: "Low Inventory: Solaris Residences",
+      description: "Solaris Residences has only 12 units (2.7%) remaining in sales inventory.",
+      severity: "warning",
+    },
+  ],
+};
 
 describe("OverviewView Component", () => {
-  describe("Partner Tier Breakdown Mathematical Consistency", () => {
-    it("verifies that tier counts sum exactly to total active partners (18 + 45 + 112 = 175)", () => {
-      const sumCounts = SAMPLE_PARTNER_TIERS_RAW.reduce(
-        (sum, item) => sum + item.partners,
-        0
-      );
-      expect(sumCounts).toBe(175);
-      expect(TOTAL_SAMPLE_PARTNERS).toBe(175);
-
-      // Verify individual tier counts
-      expect(SAMPLE_PARTNER_TIERS_RAW[0].partners).toBe(18);
-      expect(SAMPLE_PARTNER_TIERS_RAW[1].partners).toBe(45);
-      expect(SAMPLE_PARTNER_TIERS_RAW[2].partners).toBe(112);
-    });
-
-    it("verifies that derived percentages mathematically correspond to partner counts", () => {
-      const tolerance = 0.01;
-
-      // Tier 1 (Elite): 18 / 175 = ~10.2857% -> 10.3%
-      const tier1 = SAMPLE_PARTNER_TIERS.find((t) => t.tier === "Tier 1 (Elite)");
-      expect(tier1).toBeDefined();
-      expect(Math.abs(tier1!.percentage - (18 / 175) * 100)).toBeLessThan(tolerance);
-      expect(tier1!.contribution).toBe("10.3%");
-
-      // Tier 2 (Growth): 45 / 175 = ~25.7142% -> 25.7%
-      const tier2 = SAMPLE_PARTNER_TIERS.find((t) => t.tier === "Tier 2 (Growth)");
-      expect(tier2).toBeDefined();
-      expect(Math.abs(tier2!.percentage - (45 / 175) * 100)).toBeLessThan(tolerance);
-      expect(tier2!.contribution).toBe("25.7%");
-
-      // Tier 3 (Active): 112 / 175 = ~64.0000% -> 64.0%
-      const tier3 = SAMPLE_PARTNER_TIERS.find((t) => t.tier === "Tier 3 (Active)");
-      expect(tier3).toBeDefined();
-      expect(Math.abs(tier3!.percentage - (112 / 175) * 100)).toBeLessThan(tolerance);
-      expect(tier3!.contribution).toBe("64.0%");
-    });
+  beforeEach(() => {
+    vi.restoreAllMocks();
   });
 
-  describe("UI Rendering", () => {
-    it("renders Phase 1 Foundation Checkpoint banner and KPI placeholders", () => {
-      render(<OverviewView />);
+  it("renders loading state when query is loading", () => {
+    vi.spyOn(overviewHook, "useOverviewSummary").mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
 
-      expect(screen.getByText("Phase 1 Foundation Checkpoint")).toBeInTheDocument();
-      expect(screen.getByText("Active Partners")).toBeInTheDocument();
-      expect(screen.getByText("Channel Lead Flow")).toBeInTheDocument();
-      expect(screen.getByText("Visit Conversion")).toBeInTheDocument();
-      expect(screen.getByText("Bookings Velocity")).toBeInTheDocument();
+    render(<OverviewView />);
+    expect(screen.getByTestId("overview-loading-state")).toBeInTheDocument();
+    expect(
+      screen.getByText("Loading channel partner intelligence overview...")
+    ).toBeInTheDocument();
+  });
 
-      expect(screen.getByText("Pipeline Velocity & Volume Trends")).toBeInTheDocument();
-      expect(screen.getByText("Partner Tier Breakdown")).toBeInTheDocument();
-      expect(screen.getByText("Recent Channel Activity")).toBeInTheDocument();
-      expect(screen.getByText("Attention Center")).toBeInTheDocument();
-    });
+  it("renders error state and handles retry action", () => {
+    const mockRefetch = vi.fn();
+    vi.spyOn(overviewHook, "useOverviewSummary").mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("Network connection timeout"),
+      refetch: mockRefetch,
+    } as any);
 
-    it("renders partner tier counts and mathematically consistent percentage badges in the UI", () => {
-      render(<OverviewView />);
+    render(<OverviewView />);
+    expect(screen.getByTestId("overview-error-state")).toBeInTheDocument();
+    expect(screen.getByText("Unable to Load Overview Data")).toBeInTheDocument();
+    expect(screen.getByText("Network connection timeout")).toBeInTheDocument();
 
-      // Verify tier labels and counts
-      expect(screen.getByText("Tier 1 (Elite)")).toBeInTheDocument();
-      expect(screen.getByText("18 partners")).toBeInTheDocument();
-      expect(screen.getByText("10.3%")).toBeInTheDocument();
+    const retryBtn = screen.getByRole("button", { name: /Retry Request/i });
+    fireEvent.click(retryBtn);
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
 
-      expect(screen.getByText("Tier 2 (Growth)")).toBeInTheDocument();
-      expect(screen.getByText("45 partners")).toBeInTheDocument();
-      expect(screen.getByText("25.7%")).toBeInTheDocument();
+  it("renders empty state when data has zero records", () => {
+    const emptyData: OverviewSummaryResponse = {
+      kpis: {
+        active_partners: {
+          value: 0,
+          growth_pct: null,
+          breakdown: { tier_1: 0, tier_2: 0, tier_3: 0 },
+        },
+        channel_lead_flow: {
+          value: 0,
+          total_leads: 0,
+          valid_leads: 0,
+          qualified_leads: 0,
+          qualification_rate_pct: 0,
+          growth_pct: null,
+        },
+        site_visits: {
+          total_scheduled: 0,
+          total_completed: 0,
+          visit_completion_rate_pct: 0,
+          unique_visited_leads: 0,
+          qualified_lead_to_visit_rate_pct: 0,
+          growth_pct: null,
+        },
+        bookings_velocity: {
+          units_count: 0,
+          confirmed_bookings: 0,
+          confirmed_from_visited_leads: 0,
+          direct_confirmed_bookings: 0,
+          total_value_inr: 0,
+          visit_to_booking_rate_pct: 0,
+          overall_conversion_rate_pct: 0,
+          growth_pct: null,
+        },
+      },
+      tier_breakdown: [],
+      monthly_trends: [],
+      recent_activities: [],
+      attention_alerts: [],
+    };
 
-      expect(screen.getByText("Tier 3 (Active)")).toBeInTheDocument();
-      expect(screen.getByText("112 partners")).toBeInTheDocument();
-      expect(screen.getByText("64.0%")).toBeInTheDocument();
-    });
+    vi.spyOn(overviewHook, "useOverviewSummary").mockReturnValue({
+      data: emptyData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    render(<OverviewView />);
+    expect(screen.getByTestId("overview-empty-state")).toBeInTheDocument();
+    expect(screen.getByText("No Channel Activity Found")).toBeInTheDocument();
+  });
+
+  it("renders real API-backed metrics and dashboard widgets correctly", () => {
+    vi.spyOn(overviewHook, "useOverviewSummary").mockReturnValue({
+      data: MOCK_OVERVIEW_DATA,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    render(<OverviewView />);
+
+    // Top banner
+    expect(screen.getByText("Live Executive Intelligence Stream")).toBeInTheDocument();
+
+    // 1. Active Partners Card
+    expect(screen.getByTestId("kpi-value-active-partners")).toHaveTextContent("152");
+    expect(screen.getByText(/18 Tier-1 \/ 40 Tier-2 \/ 94 Tier-3 active/i)).toBeInTheDocument();
+
+    // 2. Channel Lead Flow Card
+    expect(screen.getByTestId("kpi-value-lead-flow")).toHaveTextContent("3,906");
+    expect(screen.getByText(/2,891 qualified \(74.0%\)/i)).toBeInTheDocument();
+
+    // 3. Visit Conversion Card
+    expect(screen.getByTestId("kpi-value-visit-conversion")).toHaveTextContent("50.9%");
+    expect(screen.getByText(/1,743 of 2,010 visits completed \(86.7%\)/i)).toBeInTheDocument();
+
+    // 4. Bookings Velocity Card
+    expect(screen.getByTestId("kpi-value-bookings-velocity")).toHaveTextContent("454 Units");
+    expect(screen.getByText(/29.9% visit close • ₹438.5 Cr/i)).toBeInTheDocument();
+
+    // 5. Partner Tier Breakdown
+    expect(screen.getByText("Tier 1 (Elite)")).toBeInTheDocument();
+    expect(screen.getByTestId("tier-count-0")).toHaveTextContent("18 partners");
+    expect(screen.getByTestId("tier-pct-0")).toHaveTextContent("10.3%");
+
+    expect(screen.getByText("Tier 2 (Growth)")).toBeInTheDocument();
+    expect(screen.getByTestId("tier-count-1")).toHaveTextContent("45 partners");
+    expect(screen.getByTestId("tier-pct-1")).toHaveTextContent("25.7%");
+
+    expect(screen.getByText("Tier 3 (Active)")).toBeInTheDocument();
+    expect(screen.getByTestId("tier-count-2")).toHaveTextContent("112 partners");
+    expect(screen.getByTestId("tier-pct-2")).toHaveTextContent("64.0%");
+
+    // 6. Recent Activity Table
+    expect(screen.getByText("Apex Real Estate Advisors")).toBeInTheDocument();
+    expect(screen.getByText("Booking confirmed for Rajesh Kale.")).toBeInTheDocument();
+    expect(screen.getByText("Horizon Property Consultants")).toBeInTheDocument();
+    expect(screen.getByText("Site visit completed for Siddharth More.")).toBeInTheDocument();
+
+    // 7. Attention Alerts
+    expect(screen.getByText("Low Inventory: Solaris Residences")).toBeInTheDocument();
+    expect(
+      screen.getByText("Solaris Residences has only 12 units (2.7%) remaining in sales inventory.")
+    ).toBeInTheDocument();
   });
 });

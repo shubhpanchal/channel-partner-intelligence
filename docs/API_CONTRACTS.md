@@ -31,7 +31,7 @@
 ### 2.1 Overview & Dashboard Summary
 
 #### `GET /api/v1/overview/summary`
-Retrieves consolidated executive indicators, velocity trends, partner tier distributions, and recent audit activity.
+Retrieves consolidated executive indicators, velocity trends, partner tier distributions, recent audit activity, and deterministic attention alerts.
 
 - **Query Parameters**:
   - `start_date` (optional, `YYYY-MM-DD`): Analytical window start.
@@ -42,34 +42,39 @@ Retrieves consolidated executive indicators, velocity trends, partner tier distr
 {
   "kpis": {
     "active_partners": {
-      "value": 175,
-      "growth_pct": 12.4,
+      "value": 152,
+      "growth_pct": null,
       "breakdown": {
         "tier_1": 18,
-        "tier_2": 45,
-        "tier_3": 112
+        "tier_2": 40,
+        "tier_3": 94
       }
     },
     "channel_lead_flow": {
-      "value": 3860,
-      "growth_pct": 18.2,
-      "qualified_leads": 2840,
-      "qualification_rate_pct": 73.58
+      "value": 3906,
+      "total_leads": 4018,
+      "valid_leads": 3906,
+      "qualified_leads": 2891,
+      "qualification_rate_pct": 74.01,
+      "growth_pct": null
     },
     "site_visits": {
-      "total_scheduled": 2240,
-      "total_completed": 1872,
-      "visit_completion_rate_pct": 83.57,
-      "unique_visited_leads": 1377,
-      "qualified_lead_to_visit_rate_pct": 48.49,
-      "growth_pct": 4.1
+      "total_scheduled": 2010,
+      "total_completed": 1743,
+      "visit_completion_rate_pct": 86.72,
+      "unique_visited_leads": 1472,
+      "qualified_lead_to_visit_rate_pct": 50.92,
+      "growth_pct": null
     },
     "bookings_velocity": {
-      "units_count": 446,
-      "growth_pct": 23.0,
-      "total_value_inr": 4250000000.00,
-      "visit_to_booking_rate_pct": 32.39,
-      "overall_conversion_rate_pct": 11.55
+      "units_count": 454,
+      "confirmed_bookings": 454,
+      "confirmed_from_visited_leads": 440,
+      "direct_confirmed_bookings": 14,
+      "total_value_inr": 4385100000.0,
+      "visit_to_booking_rate_pct": 29.89,
+      "overall_conversion_rate_pct": 11.62,
+      "growth_pct": null
     }
   },
   "tier_breakdown": [
@@ -95,57 +100,34 @@ Retrieves consolidated executive indicators, velocity trends, partner tier distr
   "monthly_trends": [
     {
       "month": "Jan",
-      "leads": 420,
-      "site_visits": 180,
-      "bookings": 42
+      "leads": 353,
+      "site_visits": 152,
+      "bookings": 41
     },
     {
       "month": "Feb",
-      "leads": 510,
-      "site_visits": 220,
-      "bookings": 54
-    },
-    {
-      "month": "Mar",
-      "leads": 640,
-      "site_visits": 310,
-      "bookings": 78
-    },
-    {
-      "month": "Apr",
-      "leads": 590,
-      "site_visits": 280,
-      "bookings": 65
-    },
-    {
-      "month": "May",
-      "leads": 780,
-      "site_visits": 390,
-      "bookings": 92
-    },
-    {
-      "month": "Jun",
-      "leads": 920,
-      "site_visits": 460,
-      "bookings": 115
+      "leads": 312,
+      "site_visits": 139,
+      "bookings": 36
     }
   ],
   "recent_activities": [
     {
-      "id": "act-1",
-      "partner_name": "Apex Realty Partners",
-      "action": "Submitted 6 new qualified leads for Project Solaris",
+      "id": "act-e89c...",
+      "partner_name": "Apex Realty Advisory",
+      "action": "Conducted completed site visit for lead LD-2024-8891",
+      "logged_at": "2027-01-21T18:24:00Z",
       "time_ago": "12m ago",
       "status": "success",
-      "tag": "Lead Batch"
+      "tag": "Site Visit"
     }
   ],
   "attention_alerts": [
     {
-      "id": "alt-1",
-      "title": "Lead Re-engagement Needed",
-      "description": "14 leads assigned to Tier-2 partners have not received follow-up within 48h.",
-      "severity": "warning"
+      "id": "alert-direct-bookings",
+      "title": "Direct Bookings Detected",
+      "description": "14 confirmed bookings occurred directly without prior completed site visit.",
+      "severity": "info"
     }
   ]
 }

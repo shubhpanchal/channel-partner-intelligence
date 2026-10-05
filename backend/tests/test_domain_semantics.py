@@ -18,7 +18,7 @@ Test Coverage:
 
 from __future__ import annotations
 
-from backend.app.core.domain_semantics import (
+from app.core.domain_semantics import (
     calculate_overall_lead_to_booking_rate,
     calculate_qualified_lead_to_visit_rate,
     calculate_synthetic_demo_commission,

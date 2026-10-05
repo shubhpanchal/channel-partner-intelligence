@@ -4,11 +4,12 @@
 
 **Channel Partner Intelligence** is an enterprise-grade analytics and decision-support platform designed to monitor, analyze, and optimize channel partner (broker/agent) performance across real estate and multi-tier distribution networks.
 
-### Current Status: Phase 2B — Database Implementation & Deterministic Synthetic Data
+### Current Status: Phase 2C-1 — Overview Summary API & Real Dashboard Data
 - **Phase 1 Complete**: Light B2B SaaS UI foundation, design tokens, reusable states, and test quality gates established.
 - **Phase 2A Complete**: Formally defined business domain model ([`docs/BUSINESS_DOMAIN.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/BUSINESS_DOMAIN.md)) and REST API contracts ([`docs/API_CONTRACTS.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/API_CONTRACTS.md)).
 - **Phase 2B Complete**: SQLAlchemy 2.0 database models, SQLite schema with foreign keys and partial unique indexes, deterministic synthetic data generator (`SEED = 42`), comprehensive data-integrity validator, and backend CLI management tools.
-- Strict quality gates enforced across both backend (>99% coverage) and frontend (>99% coverage).
+- **Phase 2C-1 Complete**: First end-to-end vertical slice connecting `GET /api/v1/overview/summary` to the Next.js frontend via TanStack Query, eliminating mock data and rendering 100% database-backed metrics.
+- Strict quality gates enforced across both backend (>98% coverage) and frontend (>98% coverage).
 
 ---
 
@@ -25,7 +26,8 @@ Channel Partner Intelligence
 │   │   │   ├── dashboard/        # Overview view & Phase roadmap views
 │   │   │   ├── layout/           # AppShell, Sidebar, Header
 │   │   │   └── ui/               # shadcn/ui primitives (Button, Card, Badge, Table, etc.)
-│   │   ├── lib/                  # Utility functions (cn helper, formatting)
+│   │   ├── hooks/                # TanStack Query custom hooks (useOverviewSummary)
+│   │   ├── lib/                  # Utility functions (cn, formatting) & API clients (overviewApi)
 │   │   └── __tests__/            # Vitest unit & component test suites
 │   ├── e2e/                      # Playwright end-to-end test suites
 │   ├── vitest.config.ts          # Vitest + V8 coverage configuration (>85% thresholds)
@@ -34,9 +36,11 @@ Channel Partner Intelligence
 ├── backend/                      # FastAPI + Pydantic + SQLAlchemy 2.0 + SQLite
 │   ├── app/
 │   │   ├── api/
-│   │   │   └── v1/               # Versioned API routes (health check)
+│   │   │   └── v1/               # Versioned API routes (overview, health check)
 │   │   ├── core/                 # Config (BaseSettings), Database engine & domain semantics
 │   │   ├── models/               # SQLAlchemy 2.0 entities (Salesperson, Project, ChannelPartner, Lead, SiteVisit, Booking, PartnerActivity)
+│   │   ├── schemas/              # Pydantic v2 validation & response contracts (overview.py)
+│   │   ├── services/             # Analytics & query services (overview_service.py)
 │   │   ├── seed/                 # Deterministic synthetic data generator (seed=42) & integrity validator
 │   │   ├── cli.py                # Database management and seeding CLI commands
 │   │   └── main.py               # FastAPI entry point & CORS configuration
@@ -52,9 +56,38 @@ Channel Partner Intelligence
 
 ---
 
-## 3. Database Architecture & SQLite Configuration
+## 3. Overview Summary API Architecture (Phase 2C-1)
 
-### 3.1 SQLAlchemy 2.0 Models
+### 3.1 Service & Query Flow
+The Overview Summary endpoint (`GET /api/v1/overview/summary`) adheres to clean layered architecture:
+```
+Client (TanStack Query) 
+  ↓ HTTP GET /api/v1/overview/summary?start_date=...&end_date=...&project_id=...
+FastAPI Router (backend/app/api/v1/overview.py)
+  ↓ Query parameter validation (date bounds, project existence)
+OverviewService (backend/app/services/overview_service.py)
+  ↓ Optimized SQLAlchemy 2.0 aggregate queries + domain_semantics calculations
+SQLite Database (channel_partner_intelligence.db)
+  ↓
+OverviewSummaryResponse (Pydantic v2 Schema in backend/app/schemas/overview.py)
+```
+
+### 3.2 Key Analytical Invariants
+1. **Milestone-Based Qualification**: Counts leads where `qualified_at IS NOT NULL`, preserving historical accuracy regardless of current lead state.
+2. **Visit-to-Booking Exclusion**: Direct bookings without prior completed visits (14 units in SEED=42) are excluded from the Visit-to-Booking denominator and numerator, preventing metric distortion.
+3. **Trailing 90-Day Active Partners**: Considers a partner active only if `active == True` AND the partner logged $\ge 1$ `PartnerActivity` within the trailing 90 days relative to the analytical window cutoff.
+4. **Deterministic Alerts**: Only surfacing verified business anomalies (e.g. direct booking notices) without unverified AI hallucinations.
+
+### 3.3 Frontend TanStack Query Integration
+- **API Client**: `frontend/src/lib/api/overview.ts` provides typed `getOverviewSummary(filters)`.
+- **Query Hook**: `frontend/src/hooks/use-overview-summary.ts` exposes `useOverviewSummary(filters)` with `staleTime: 60_000` (1 minute cache).
+- **Graceful States**: `OverviewView` handles initial loading with `LoadingState` skeletons, network/query errors with `ErrorState` + retry callback, and empty collections with `EmptyState`.
+
+---
+
+## 4. Database Architecture & SQLite Configuration
+
+### 4.1 SQLAlchemy 2.0 Models
 All database models are implemented using typed SQLAlchemy 2.0 declarative definitions in [`backend/app/models/entities.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/models/entities.py):
 - **`Salesperson`** (`salespeople`): Internal developer sales managers and team clusters.
 - **`Project`** (`projects`): Real estate assets with dynamic unit inventory tracking.
@@ -64,7 +97,7 @@ All database models are implemented using typed SQLAlchemy 2.0 declarative defin
 - **`Booking`** (`bookings`): Transaction records with active vs terminal status tracking.
 - **`PartnerActivity`** (`partner_activities`): Historical touchpoint audit ledger.
 
-### 3.2 SQLite Foreign Keys & Partial Unique Indexes
+### 4.2 SQLite Foreign Keys & Partial Unique Indexes
 - **Foreign Key Enforcement**: SQLite does not enable foreign keys by default. An engine event listener automatically executes `PRAGMA foreign_keys=ON;` upon establishing every connection.
 - **Active Booking Invariant**: To guarantee that a lead never has more than one concurrent active booking, a SQLite partial unique index is defined:
   ```python
@@ -79,7 +112,7 @@ All database models are implemented using typed SQLAlchemy 2.0 declarative defin
 
 ---
 
-## 4. Database Management & Seeding CLI
+## 5. Database Management & Seeding CLI
 
 A dedicated CLI is provided in [`backend/app/cli.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/cli.py):
 
@@ -102,7 +135,7 @@ python -m app.cli reset-db --seed 42
 
 ---
 
-## 5. Prerequisites
+## 6. Prerequisites
 
 - **Python**: 3.10+ (tested on Python 3.11.9)
 - **Node.js**: 18.17+ / 20+ / 24+ (tested on Node v24.15.0)
@@ -111,9 +144,9 @@ python -m app.cli reset-db --seed 42
 
 ---
 
-## 6. Environment Setup
+## 7. Environment Setup
 
-### 6.1 Backend Virtual Environment (`backend/.venv`)
+### 7.1 Backend Virtual Environment (`backend/.venv`)
 
 ```bash
 # Navigate to the backend directory
@@ -133,7 +166,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
 ```
 
-### 6.2 Frontend Dependencies
+### 7.2 Frontend Dependencies
 
 ```bash
 # Navigate to the frontend directory
@@ -143,7 +176,7 @@ cd frontend
 npm install
 ```
 
-### 6.3 Environment Variables
+### 7.3 Environment Variables
 
 Copy `.env.example` at the repository root to create `.env`:
 
@@ -162,9 +195,9 @@ cp .env.example .env
 
 ---
 
-## 7. Running the Application Locally
+## 8. Running the Application Locally
 
-### 7.1 Starting the Backend Server
+### 8.1 Starting the Backend Server
 
 ```bash
 cd backend
@@ -174,7 +207,7 @@ cd backend
 - Health Endpoint: `http://127.0.0.1:8000/health` (and `http://127.0.0.1:8000/api/v1/health`)
 - Interactive Swagger UI: `http://127.0.0.1:8000/api/v1/docs`
 
-### 7.2 Starting the Frontend Server
+### 8.2 Starting the Frontend Server
 
 ```bash
 cd frontend
@@ -184,35 +217,42 @@ npm run dev
 
 ---
 
-## 8. Testing & Quality Gates
+## 9. Testing & Quality Gates
 
-Quality gates enforce that code coverage never drops below **85%**. Current project status: **>99% coverage** on both backend and frontend.
+Quality gates enforce that code coverage never drops below **85%**. Current project status: **>98% coverage** on both backend and frontend.
 
-### 8.1 Backend Tests & Coverage
+### 9.1 Backend Tests & Coverage
 
 ```bash
 cd backend
 python -m pytest tests --cov=app --cov-report=term-missing
 ```
 
-### 8.2 Backend Linter (Ruff)
+### 9.2 Backend Linter (Ruff)
 
 ```bash
 cd backend
 python -m ruff check .
 ```
 
-### 8.3 Frontend Tests & Coverage
+### 9.3 Frontend Tests & Coverage
 
 ```bash
 cd frontend
 npm run test:coverage
 ```
 
-### 8.4 Frontend Linter & Build
+### 9.4 Frontend Linter & Build
 
 ```bash
 cd frontend
 npm run lint
 npm run build
+```
+
+### 9.5 End-to-End Tests (Playwright)
+
+```bash
+cd frontend
+npx playwright test
 ```
