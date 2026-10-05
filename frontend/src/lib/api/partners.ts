@@ -99,6 +99,7 @@ export interface PartnerRecentBookingItem {
   commission_rate_pct: number;
   commission_amount: number;
   salesperson_name: string;
+  cancelled_at?: string | null;
   created_at: string;
 }
 

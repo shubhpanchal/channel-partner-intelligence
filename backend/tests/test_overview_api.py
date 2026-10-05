@@ -100,28 +100,28 @@ def test_overview_summary_canonical_seed_42_values(seeded_client: TestClient):
 
     # 1. Lead Flow Metrics
     lead_flow = kpis["channel_lead_flow"]
-    assert lead_flow["total_leads"] == 1262
-    assert lead_flow["valid_leads"] == 1238
-    assert lead_flow["value"] == 1238
-    assert lead_flow["qualified_leads"] == 956
-    assert lead_flow["qualification_rate_pct"] == 77.22
+    assert lead_flow["total_leads"] == 1252
+    assert lead_flow["valid_leads"] == 1232
+    assert lead_flow["value"] == 1232
+    assert lead_flow["qualified_leads"] == 963
+    assert lead_flow["qualification_rate_pct"] == 78.17
 
     # 2. Site Visit Metrics
     site_visits = kpis["site_visits"]
-    assert site_visits["total_scheduled"] == 728
+    assert site_visits["total_scheduled"] == 735
     assert site_visits["total_completed"] == 625
-    assert site_visits["visit_completion_rate_pct"] == 85.85
-    assert site_visits["unique_visited_leads"] == 510
-    assert site_visits["qualified_lead_to_visit_rate_pct"] == 53.35
+    assert site_visits["visit_completion_rate_pct"] == 85.03
+    assert site_visits["unique_visited_leads"] == 516
+    assert site_visits["qualified_lead_to_visit_rate_pct"] == 53.58
 
     # 3. Bookings Velocity Metrics
     bookings = kpis["bookings_velocity"]
-    assert bookings["units_count"] == 156
-    assert bookings["confirmed_bookings"] == 156
-    assert bookings["confirmed_from_visited_leads"] == 151
-    assert bookings["direct_confirmed_bookings"] == 5
-    assert bookings["visit_to_booking_rate_pct"] == 29.61
-    assert bookings["overall_conversion_rate_pct"] == 12.60
+    assert bookings["units_count"] == 158
+    assert bookings["confirmed_bookings"] == 158
+    assert bookings["confirmed_from_visited_leads"] == 149
+    assert bookings["direct_confirmed_bookings"] == 9
+    assert bookings["visit_to_booking_rate_pct"] == 28.88
+    assert bookings["overall_conversion_rate_pct"] == 12.82
     assert bookings["total_value_inr"] > 1_000_000_000.00
 
     # 4. Active Partners & Trailing-90-Day Breakdown
@@ -195,7 +195,7 @@ def test_milestone_qualification_preservation(seeded_db_session: Session):
     assert lost_qualified > 0, "Expected some leads to be lost after historical qualification"
 
     summary = get_overview_summary(seeded_db_session)
-    assert summary.kpis.channel_lead_flow.qualified_leads == 956
+    assert summary.kpis.channel_lead_flow.qualified_leads == 963
 
 
 def test_invalid_leads_excluded_from_valid_count(seeded_db_session: Session):
@@ -205,8 +205,8 @@ def test_invalid_leads_excluded_from_valid_count(seeded_db_session: Session):
         .filter(Lead.status == "Invalid")
         .count()
     )
-    assert invalid_count == 24
-    assert 1262 - invalid_count == 1238
+    assert invalid_count == 20
+    assert 1252 - invalid_count == 1232
 
 
 def test_direct_bookings_excluded_from_visit_to_booking_rate(seeded_db_session: Session):
@@ -214,9 +214,9 @@ def test_direct_bookings_excluded_from_visit_to_booking_rate(seeded_db_session: 
     from app.services.overview_service import get_overview_summary
 
     summary = get_overview_summary(seeded_db_session)
-    assert summary.kpis.bookings_velocity.direct_confirmed_bookings == 5
-    assert summary.kpis.bookings_velocity.confirmed_from_visited_leads == 151
-    assert summary.kpis.bookings_velocity.visit_to_booking_rate_pct == 29.61
+    assert summary.kpis.bookings_velocity.direct_confirmed_bookings == 9
+    assert summary.kpis.bookings_velocity.confirmed_from_visited_leads == 149
+    assert summary.kpis.bookings_velocity.visit_to_booking_rate_pct == 28.88
 
 
 # ==============================================================================

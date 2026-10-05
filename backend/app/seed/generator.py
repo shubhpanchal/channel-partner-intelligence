@@ -486,6 +486,7 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                     "commission_rate_pct": comm_pct,
                     "commission_amount": comm_amt,
                     "is_synthetic_commission": True,
+                    "cancelled_at": None,
                     "created_at": converted_at,
                 })
                 booking_id_counter += 1
@@ -631,11 +632,39 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                     books_unit = positive_outcome and (rng.random() < booking_close_prob)
 
                     if books_unit:
-                        booking_date_dt = advance_dt(last_visited_dt, 86400 * 2, 86400 * 14)
-
                         # Earlier cancelled booking attempt (~6% of booking leads)
-                        if rng.random() < 0.06:
-                            # 1st Booking: Cancelled
+                        has_cancelled_attempt = rng.random() < 0.06
+
+                        if has_cancelled_attempt:
+                            # Strict chronology:
+                            # last_visited_dt < bk_attempt_created_at < bk_attempt_cancelled_at
+                            # < final_booking_created_at <= max_boundary_dt
+                            bk_attempt_created_at = advance_dt(
+                                last_visited_dt, 86400 * 1, 86400 * 3
+                            )
+                            bk_attempt_cancelled_at = advance_dt(
+                                bk_attempt_created_at, 86400 * 1, 86400 * 4
+                            )
+                            final_booking_created_at = advance_dt(
+                                bk_attempt_cancelled_at, 86400 * 2, 86400 * 7
+                            )
+
+                            # Clamp to canonical dataset date boundary if necessary
+                            if final_booking_created_at > max_boundary_dt:
+                                avail_secs = max(
+                                    3600.0, (max_boundary_dt - last_visited_dt).total_seconds()
+                                )
+                                bk_attempt_created_at = last_visited_dt + timedelta(
+                                    seconds=avail_secs * 0.25
+                                )
+                                bk_attempt_cancelled_at = last_visited_dt + timedelta(
+                                    seconds=avail_secs * 0.55
+                                )
+                                final_booking_created_at = last_visited_dt + timedelta(
+                                    seconds=avail_secs * 0.85
+                                )
+
+                            # 1st Booking Attempt: Cancelled (different unit allowed)
                             bk_cancelled_id = f"bk-{booking_id_counter:06d}"
                             bk_cancelled_ref = f"BK-2026-{booking_id_counter:06d}"
                             val_cancelled = calculate_synthetic_booking_value(
@@ -646,15 +675,6 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                             comm_canc = Decimal(
                                 str(round((float(val_cancelled) * 2.0) / 100.0, 2))
                             )
-                            bk_cancelled_dt = max(
-                                last_visited_dt,
-                                booking_date_dt - timedelta(days=rng.randint(1, 5)),
-                            )
-                            if bk_cancelled_dt >= booking_date_dt:
-                                bk_cancelled_dt = max(
-                                    last_visited_dt,
-                                    booking_date_dt - timedelta(hours=2),
-                                )
 
                             bookings.append({
                                 "id": bk_cancelled_id,
@@ -665,18 +685,38 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                                 "salesperson_id": assigned_sp,
                                 "unit_number": f"Unit {rng.randint(101, 805)}",
                                 "unit_type": req_type,
-                                "booking_date": bk_cancelled_dt.date(),
+                                "booking_date": bk_attempt_created_at.date(),
                                 "booking_status": "Cancelled",
                                 "booking_value": val_cancelled,
                                 "token_amount": Decimal("100000.00"),
                                 "commission_rate_pct": Decimal("2.0"),
                                 "commission_amount": comm_canc,
                                 "is_synthetic_commission": True,
-                                "created_at": bk_cancelled_dt,
+                                "cancelled_at": bk_attempt_cancelled_at,
+                                "created_at": bk_attempt_created_at,
                             })
                             booking_id_counter += 1
 
-                        # Active / Confirmed / Completed Booking
+                            partner_activities.append({
+                                "id": f"act-{activity_id_counter}",
+                                "channel_partner_id": cp_id,
+                                "activity_type": "booking_cancelled",
+                                "entity_type": "booking",
+                                "entity_id": bk_cancelled_id,
+                                "description": (
+                                    f"Booking attempt for {customer_name} cancelled "
+                                    f"({bk_cancelled_ref})."
+                                ),
+                                "metadata_json": None,
+                                "logged_at": bk_attempt_cancelled_at,
+                            })
+                            activity_id_counter += 1
+
+                            booking_date_dt = final_booking_created_at
+                        else:
+                            booking_date_dt = advance_dt(last_visited_dt, 86400 * 2, 86400 * 14)
+
+                        # Active / Confirmed / Completed Booking (Replacement or Direct Flow)
                         booking_id = f"bk-{booking_id_counter:06d}"
                         booking_ref = f"BK-2026-{booking_id_counter:06d}"
                         booking_val = calculate_synthetic_booking_value(
@@ -721,6 +761,7 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                             "commission_rate_pct": comm_pct,
                             "commission_amount": comm_amt,
                             "is_synthetic_commission": True,
+                            "cancelled_at": None,
                             "created_at": booking_date_dt,
                         })
                         booking_id_counter += 1

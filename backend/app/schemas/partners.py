@@ -193,6 +193,9 @@ class PartnerRecentBookingItem(BaseModel):
         ..., description="Estimated commission amount in INR"
     )
     salesperson_name: str = Field(..., description="Handling internal sales manager")
+    cancelled_at: Optional[datetime] = Field(
+        None, description="Booking cancellation timestamp if status is Cancelled"
+    )
     created_at: datetime = Field(..., description="Booking creation timestamp")
 
     model_config = ConfigDict(from_attributes=True)

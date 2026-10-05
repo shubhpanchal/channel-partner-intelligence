@@ -271,10 +271,12 @@ def test_booking_model_and_partial_unique_index(db_session):
         booking_status=BookingStatus.CANCELLED.value,
         commission_rate_pct=Decimal("2.00"),
         commission_amount=Decimal("130000.00"),
+        cancelled_at=now - timedelta(days=15),
         created_at=now - timedelta(days=20),
     )
     db_session.add(b1)
     db_session.commit()
+    assert b1.cancelled_at is not None
 
     # Second booking: Initiated (Active)
     b2 = Booking(

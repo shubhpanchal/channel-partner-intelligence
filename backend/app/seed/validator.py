@@ -303,6 +303,10 @@ def validate_dataset(session: Session) -> ValidationReport:
             boundary_errors.append(
                 f"Booking {b.id} created_at ({b.created_at}) outside 2026 boundary"
             )
+        if b.cancelled_at is not None and not (min_bound_dt <= b.cancelled_at <= max_bound_dt):
+            boundary_errors.append(
+                f"Booking {b.id} cancelled_at ({b.cancelled_at}) outside 2026 boundary"
+            )
         if b.booking_date is not None and not (min_bound_date <= b.booking_date <= max_bound_date):
             boundary_errors.append(
                 f"Booking {b.id} booking_date ({b.booking_date}) outside 2026 boundary"
@@ -319,6 +323,66 @@ def validate_dataset(session: Session) -> ValidationReport:
         "Canonical Dataset Date Boundary",
         len(boundary_errors) == 0,
         f"Found {len(boundary_errors)} records outside 2026 boundary",
+    )
+
+    # 4c. Booking Cancellation & Attempt Chronology
+    cancellation_errors: List[str] = []
+    cancelled_bookings = [b for b in all_bookings if b.booking_status == "Cancelled"]
+    non_cancelled_bookings = [b for b in all_bookings if b.booking_status != "Cancelled"]
+
+    for b in cancelled_bookings:
+        if b.cancelled_at is None:
+            cancellation_errors.append(
+                f"Booking {b.id}: Cancelled status but cancelled_at is None"
+            )
+        elif b.created_at >= b.cancelled_at:
+            cancellation_errors.append(
+                f"Booking {b.id}: created_at ({b.created_at}) >= cancelled_at ({b.cancelled_at})"
+            )
+        if b.booking_date != b.created_at.date():
+            cancellation_errors.append(
+                f"Booking {b.id}: booking_date ({b.booking_date}) "
+                f"!= created_at.date() ({b.created_at.date()})"
+            )
+
+    for b in non_cancelled_bookings:
+        if b.cancelled_at is not None:
+            cancellation_errors.append(
+                f"Booking {b.id}: status is {b.booking_status} but cancelled_at is not None"
+            )
+
+    report.add_check(
+        "Booking Cancellation Chronology",
+        len(cancellation_errors) == 0 and len(cancelled_bookings) > 0,
+        f"Verified {len(cancelled_bookings)} cancelled booking attempts "
+        f"with created_at < cancelled_at",
+    )
+
+    # 4d. Booking Replacement Chronology
+    replacement_errors: List[str] = []
+    bookings_by_lead_all: Dict[str, List[Booking]] = {}
+    for b in all_bookings:
+        bookings_by_lead_all.setdefault(b.lead_id, []).append(b)
+
+    leads_with_replacements = 0
+    for lid, lead_bks in bookings_by_lead_all.items():
+        if len(lead_bks) > 1:
+            leads_with_replacements += 1
+            sorted_bks = sorted(lead_bks, key=lambda x: x.created_at)
+            for i in range(len(sorted_bks) - 1):
+                prev_bk = sorted_bks[i]
+                next_bk = sorted_bks[i + 1]
+                if prev_bk.cancelled_at and next_bk.created_at <= prev_bk.cancelled_at:
+                    replacement_errors.append(
+                        f"Lead {lid}: replacement created_at ({next_bk.created_at}) "
+                        f"<= previous cancelled_at ({prev_bk.cancelled_at})"
+                    )
+
+    report.add_check(
+        "Booking Replacement Chronology",
+        len(replacement_errors) == 0 and leads_with_replacements > 0,
+        f"Verified {leads_with_replacements} leads with replacement history "
+        f"(replacement.created_at > prev.cancelled_at)",
     )
 
     # 5. Active Booking Invariant

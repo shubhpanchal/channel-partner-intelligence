@@ -497,6 +497,7 @@ def get_partner_by_id(db: Session, partner_id: str) -> PartnerDetailResponse:
             commission_rate_pct=float(bk.commission_rate_pct),
             commission_amount=float(bk.commission_amount),
             salesperson_name=bk.salesperson.name if bk.salesperson else "Unknown",
+            cancelled_at=bk.cancelled_at,
             created_at=bk.created_at,
         )
         for bk in recent_bookings_records

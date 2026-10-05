@@ -768,8 +768,16 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
                   <TableBody>
                     {partner.recent_bookings.map((bk) => (
                       <TableRow key={bk.id} className="hover:bg-slate-50/80">
-                        <TableCell className="font-mono text-xs font-medium text-slate-700">
-                          {bk.booking_reference}
+                        <TableCell>
+                          <div className="font-mono text-xs font-medium text-slate-700">
+                            {bk.booking_reference}
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            {new Date(bk.created_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="font-medium text-xs text-slate-900">
@@ -785,7 +793,17 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
                         <TableCell className="text-right text-xs font-semibold text-slate-900 whitespace-nowrap">
                           {formatCurrencyInr(bk.booking_value)}
                         </TableCell>
-                        <TableCell>{getStatusBadge(bk.booking_status)}</TableCell>
+                        <TableCell>
+                          <div>{getStatusBadge(bk.booking_status)}</div>
+                          {bk.booking_status.toLowerCase() === "cancelled" && bk.cancelled_at && (
+                            <div className="text-[10px] text-rose-600 mt-0.5 whitespace-nowrap">
+                              Canc: {new Date(bk.cancelled_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </div>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

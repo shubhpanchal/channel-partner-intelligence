@@ -149,7 +149,7 @@ The demo dataset is strictly personalized for Harivishva's **Tathawade, Pune** r
 
 ### 5.2 Determinism & Seed Behavior
 - Canonical generator seed: `SEED = 42`.
-- Generates 1,230 leads (1,211 valid, 919 qualified), 704 scheduled site visits (606 completed), and 139 confirmed/completed bookings.
+- Generates 1,252 leads (1,232 valid, 963 qualified), 735 scheduled site visits (625 completed), 158 confirmed/completed bookings, and 7 cancelled booking attempts with explicit replacement chronology and unit replacement support.
 - Project affinities (Skyfinia specialists, Infinia specialists, dual portfolio elite) ensure meaningful project booking contribution charts on individual partner detail pages.
 
 ### 5.3 Synthetic vs. Production Separation

@@ -192,13 +192,14 @@ Represents an executed transactional agreement and token payment for a specific 
   - `salesperson_id`: Foreign key to `salespeople.id` (**Required**).
   - `unit_number`: Physical unit descriptor (e.g., "Tower A - Unit 1402").
   - `unit_type`: Unit configuration (e.g., "3 BHK Premium").
-  - `booking_date`: Official date of token receipt and booking signing (**Booking Date**).
+  - `booking_date`: Business date of the booking attempt creation (**Booking Date**).
   - `booking_status`: Transaction status (`Initiated`, `Confirmed`, `Cancelled`, `Completed`).
   - `booking_value`: Agreed agreement value in INR (e.g., `12500000` = ₹1.25 Cr).
   - `token_amount`: Earnest token amount received (e.g., `200000` = ₹2 Lakh).
   - `commission_rate_pct`: Brokerage commission percentage (e.g., `2.0` = 2.0%).
   - `commission_amount`: Computed commission amount in INR (e.g., `250000`).
-  - `created_at`, `updated_at`: ISO-8601 UTC timestamps.
+  - `cancelled_at`: Exact timestamp when booking attempt was cancelled (Nullable; populated for `Cancelled` status).
+  - `created_at`, `updated_at`: ISO-8601 UTC timestamps (`created_at` represents booking attempt creation).
 
 #### Booking Status Classification
 - **ACTIVE_BOOKING_STATUSES**:
@@ -208,11 +209,18 @@ Represents an executed transactional agreement and token payment for a specific 
   - `Completed`: Full agreement and registration finalized; active demand milestone schedule.
   - `Cancelled`: Booking cancelled by buyer or developer; unit restored to inventory.
 
-#### Booking Cardinality & Active Booking Invariant
-1. **Multi-Record History (`0..*`)**: A single lead may have multiple historical booking records (e.g., an initial booking attempt that was `Cancelled`, followed by a subsequent `Confirmed` booking, or multiple completed past transactions).
-2. **Active Booking Invariant**: A lead may not have more than **one concurrent active booking** (status `Initiated` or `Confirmed`).
-3. **Terminal Records**: `Completed` and `Cancelled` records are historical/terminal records and do **NOT** count as concurrent active bookings.
-4. **Commission Assumption Disclaimer**:
+#### Booking Lifecycle Chronology & Unit Replacement
+1. **Multi-Record History (`0..*`)**: A single lead may have multiple historical booking records (e.g., an initial booking attempt that was `Cancelled`, followed by a subsequent replacement booking that was `Confirmed`, or multiple completed past transactions).
+2. **Explicit Cancellation Chronology**:
+   - For every cancelled booking: `created_at < cancelled_at` and `booking_date == created_at.date()`.
+   - The creation timestamp and business booking date represent the attempt creation; the cancellation timestamp `cancelled_at` represents the subsequent status-transition event.
+3. **Sequential Replacement Chronology**:
+   - For a replacement booking following a cancellation: `replacement.created_at > previous.cancelled_at`.
+4. **Unit Replacement Flexibility**:
+   - Sequential booking attempts for the same lead may specify different unit numbers (e.g., Unit 286 cancelled $\rightarrow$ Unit 811 confirmed). Distinct unit inventory across sequential attempts is fully valid.
+5. **Active Booking Invariant**: A lead may not have more than **one concurrent active booking** (status `Initiated` or `Confirmed`).
+6. **Terminal Records**: `Completed` and `Cancelled` records are historical/terminal records and do **NOT** count as concurrent active bookings.
+7. **Commission Assumption Disclaimer**:
    > **Synthetic Data Notice**: The default `2.0%` base commission rate and computed commission amounts are synthetic sample/demo data assumptions used for analytical pipeline modeling only. They do **NOT** represent Harivishva's actual commercial commission policy or partner contract terms.
 
 ---

@@ -59,19 +59,19 @@ When initialized with `SEED = 42`, the generator yields the exact canonical data
 | ↳ *Tier 1 (Elite)* | 6 | **6** (16.7%) | Pass |
 | ↳ *Tier 2 (Growth)* | 10 | **10** (27.8%) | Pass |
 | ↳ *Tier 3 (Active)* | 20 | **20** (55.6%) | Pass |
-| **Leads** | 1,200 – 1,500 | **1,262** total records | Pass |
-| ↳ *Valid Leads (`status != 'Invalid'`)* | — | **1,238** (98.1%) | Pass |
-| ↳ *Qualified Leads (`qualified_at IS NOT NULL`)* | — | **956** (77.22% qualification rate) | Pass |
-| **Site Visits** | 500 – 800 | **728** total scheduled | Pass |
-| ↳ *Completed Site Visits* | 600 – 750 | **625** (85.85% completion rate) | Pass |
-| ↳ *Unique Visited Leads* | — | **510** (53.35% qualified $\rightarrow$ visit rate) | Pass |
-| **Bookings** | 100 – 160 Confirmed | **174** total booking records | Pass |
-| ↳ *Confirmed / Completed Bookings* | 100 – 160 | **156** | Pass |
-| ↳ *Visited Leads Confirmed Bookings* | — | **151** (29.61% visit $\rightarrow$ booking rate) | Pass |
-| ↳ *Direct Confirmed Bookings (No Site Visit)* | — | **5** (3.2% of confirmed) | Pass |
+| **Leads** | 1,200 – 1,500 | **1,252** total records | Pass |
+| ↳ *Valid Leads (`status != 'Invalid'`)* | — | **1,232** (98.4%) | Pass |
+| ↳ *Qualified Leads (`qualified_at IS NOT NULL`)* | — | **963** (78.17% qualification rate) | Pass |
+| **Site Visits** | 500 – 800 | **735** total scheduled | Pass |
+| ↳ *Completed Site Visits* | 600 – 750 | **625** (85.03% completion rate) | Pass |
+| ↳ *Unique Visited Leads* | — | **516** (53.58% qualified $\rightarrow$ visit rate) | Pass |
+| **Bookings** | 100 – 160 Confirmed | **171** total booking records | Pass |
+| ↳ *Confirmed / Completed Bookings* | 100 – 160 | **158** | Pass |
+| ↳ *Visited Leads Confirmed Bookings* | — | **149** (28.88% visit $\rightarrow$ booking rate) | Pass |
+| ↳ *Direct Confirmed Bookings (No Site Visit)* | — | **9** (5.7% of confirmed) | Pass |
 | ↳ *Initiated Bookings (In Pipeline)* | — | **6** | Pass |
-| ↳ *Cancelled Booking Records* | — | **12** (Historical audit trail) | Pass |
-| **Partner Activities** | Sufficient audit volume | **2,037** activity logs | Pass |
+| ↳ *Cancelled Booking Records (`cancelled_at > created_at`)* | — | **7** (Historical audit trail with unit replacement support) | Pass |
+| **Partner Activities** | Sufficient audit volume | **2,047** activity logs | Pass |
 
 ---
 

@@ -412,6 +412,7 @@ class Booking(Base):
     is_synthetic_commission: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False
     )
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )

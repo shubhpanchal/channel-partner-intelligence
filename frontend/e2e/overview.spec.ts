@@ -23,15 +23,15 @@ test.describe("Overview Summary API & Real Dashboard Integration (Phase 2C-1)", 
 
     const leadFlowCard = page.getByTestId("kpi-card-lead-flow");
     await expect(leadFlowCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-lead-flow")).toHaveText("1,238");
+    await expect(page.getByTestId("kpi-value-lead-flow")).toHaveText("1,232");
 
     const visitConversionCard = page.getByTestId("kpi-card-visit-conversion");
     await expect(visitConversionCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-visit-conversion")).toHaveText("53.4%");
+    await expect(page.getByTestId("kpi-value-visit-conversion")).toHaveText("53.6%");
 
     const bookingsVelocityCard = page.getByTestId("kpi-card-bookings-velocity");
     await expect(bookingsVelocityCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-bookings-velocity")).toHaveText("156 Units");
+    await expect(page.getByTestId("kpi-value-bookings-velocity")).toHaveText("158 Units");
 
     // Verify Partner Tier Breakdown
     const tierCard = page.getByTestId("card-partner-tier-breakdown");

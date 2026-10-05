@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Any, Dict, List
 
 from app.models import ChannelPartner, Lead, LeadStatus, PartnerTier
 from app.seed.constants import TARGET_PARTNER_DISTRIBUTION
@@ -362,3 +363,66 @@ def test_synthetic_booking_pricing_rule_and_floor_invariant():
         assert bk["booking_value"] >= proj_floor, (
             f"Booking {bk['id']} value {bk['booking_value']} below floor {proj_floor}"
         )
+
+
+def test_booking_attempt_cancellation_chronology():
+    """Verify that cancelled bookings have created_at < cancelled_at and valid booking_date."""
+    data = generate_synthetic_dataset(seed=42)
+    cancelled_bookings = [b for b in data["bookings"] if b["booking_status"] == "Cancelled"]
+    non_cancelled_bookings = [b for b in data["bookings"] if b["booking_status"] != "Cancelled"]
+
+    assert len(cancelled_bookings) > 0, "Dataset should contain cancelled booking attempts"
+
+    for b in cancelled_bookings:
+        assert b["cancelled_at"] is not None, f"Booking {b['id']} must have cancelled_at"
+        assert b["created_at"] < b["cancelled_at"], (
+            f"Booking {b['id']}: created_at ({b['created_at']}) "
+            f"must be earlier than cancelled_at ({b['cancelled_at']})"
+        )
+        assert b["booking_date"] == b["created_at"].date(), (
+            f"Booking {b['id']}: booking_date ({b['booking_date']}) "
+            f"must match created_at.date() ({b['created_at'].date()})"
+        )
+
+    for b in non_cancelled_bookings:
+        assert b["cancelled_at"] is None, (
+            f"Booking {b['id']} has status {b['booking_status']} but cancelled_at is not None"
+        )
+
+
+def test_booking_replacement_lifecycle_and_different_units():
+    """Verify replacement bookings occur strictly after cancellation with different units."""
+    data = generate_synthetic_dataset(seed=42)
+    bookings_by_lead: Dict[str, List[Dict[str, Any]]] = {}
+    for b in data["bookings"]:
+        bookings_by_lead.setdefault(b["lead_id"], []).append(b)
+
+    leads_with_replacement = {
+        lid: bks for lid, bks in bookings_by_lead.items() if len(bks) > 1
+    }
+    assert len(leads_with_replacement) > 0, (
+        "Dataset must include leads with replacement booking history"
+    )
+
+    for lid, lead_bks in leads_with_replacement.items():
+        # Sort by creation time
+        sorted_bks = sorted(lead_bks, key=lambda x: x["created_at"])
+        for i in range(len(sorted_bks) - 1):
+            prev_b = sorted_bks[i]
+            next_b = sorted_bks[i + 1]
+
+            # Previous booking must be Cancelled
+            assert prev_b["booking_status"] == "Cancelled"
+            assert prev_b["cancelled_at"] is not None
+
+            # Replacement booking must be created AFTER previous booking cancellation
+            assert next_b["created_at"] > prev_b["cancelled_at"], (
+                f"Lead {lid}: Replacement booking {next_b['id']} created_at "
+                f"({next_b['created_at']}) must be after previous "
+                f"cancelled_at ({prev_b['cancelled_at']})"
+            )
+            assert next_b["booking_date"] == next_b["created_at"].date()
+
+        # Check unit numbers (different units are valid and supported)
+        unit_numbers = [b["unit_number"] for b in sorted_bks]
+        assert len(unit_numbers) == len(lead_bks)
