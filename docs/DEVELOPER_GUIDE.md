@@ -119,6 +119,7 @@ To ensure enterprise ergonomics across large screens while preserving mobile dra
 ### 4.5 Bounded Activity Viewport Pattern
 To prevent data-heavy lists from bloating page height and causing horizontal overflow:
 - **Internal Viewport Height**: Recent Inbound Leads and Recent Booking Closures use bounded containers (`max-h-[270px] overflow-y-auto`).
+- **Lifecycle Event Sorting**: Recent Booking Closures are ordered by the latest lifecycle event (`COALESCE(Booking.cancelled_at, Booking.created_at) DESC, Booking.id DESC`), ensuring cancelled records surface by their cancellation timestamp (`cancelled_at`) and confirmed/active records by their creation timestamp (`created_at`).
 - **Sticky Table Headers**: Table headers are configured with `sticky top-0 bg-slate-50 z-10 shadow-xs` to keep column context visible during internal scrolling.
 - **Compact Desktop Columns**: High-priority fields (Booking Ref, Customer / Unit, Project, Value, Status) are styled to fit seamlessly within card boundaries without horizontal scrollbars.
 - **Mobile Responsive Presentation**: On mobile viewports (<640px), compact stacked badges and truncated identifiers ensure zero page-level horizontal overflow.

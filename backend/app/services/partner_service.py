@@ -467,7 +467,7 @@ def get_partner_by_id(db: Session, partner_id: str) -> PartnerDetailResponse:
         for ld in recent_leads_records
     ]
 
-    # 7. Recent Bookings (limit 10, newest first)
+    # 7. Recent Bookings (limit 10, latest lifecycle event first)
     recent_bookings_records = db.scalars(
         select(Booking)
         .options(
@@ -476,7 +476,10 @@ def get_partner_by_id(db: Session, partner_id: str) -> PartnerDetailResponse:
             joinedload(Booking.salesperson),
         )
         .where(Booking.channel_partner_id == partner.id)
-        .order_by(Booking.created_at.desc(), Booking.id.desc())
+        .order_by(
+            func.coalesce(Booking.cancelled_at, Booking.created_at).desc(),
+            Booking.id.desc(),
+        )
         .limit(10)
     ).all()
 

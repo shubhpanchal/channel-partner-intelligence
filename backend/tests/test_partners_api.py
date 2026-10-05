@@ -840,3 +840,211 @@ def test_partner_metrics_zero_leads_edge_case(fresh_session: Session):
     item = list_res.items[0]
     assert item.summary_stats.total_leads == 0
     assert item.summary_stats.visit_to_booking_rate_pct == 0.0
+
+
+# ==============================================================================
+# Recent Bookings Lifecycle Event Ordering Tests (Issue #10)
+# ==============================================================================
+
+
+def test_recent_bookings_lifecycle_event_ordering_synthetic(fresh_session: Session):
+    """Verify recent bookings are ordered by COALESCE(cancelled_at, created_at) DESC."""
+    from app.models.entities import Project
+    from app.services.partner_service import get_partner_by_id
+
+    partner = ChannelPartner(
+        id="cp-ord-test",
+        partner_code="CP-ORD-1",
+        name="Lifecycle Ordering Partner",
+        contact_person="Rohan Varma",
+        phone="+91 99999 11111",
+        email="rohan@ordering.com",
+        city="Pune",
+        location="Tathawade",
+        onboarding_date=date(2026, 1, 1),
+        active=True,
+        tier="Tier 1",
+        channel_type="Corporate Broker",
+    )
+    project = Project(
+        id="prj-ord-test",
+        project_code="PRJ-ORD",
+        name="Harivishva Skyfinia Phase 1",
+        project_type="Residential",
+        location="Tathawade",
+        city="Pune",
+        status="Active",
+        launch_date=date(2026, 1, 1),
+        target_units=100,
+        available_units=50,
+        starting_price=9000000.00,
+    )
+    salesperson = Salesperson(
+        id="sp-ord-test",
+        name="Rohit Deshmukh",
+        email="rohit.deshmukh@harivishva.com",
+        phone="+91 98888 11111",
+        team="Sales",
+        active=True,
+    )
+    lead1 = Lead(
+        id="ld-ord-1",
+        lead_code="LD-ORD-1",
+        customer_name="Customer Alpha",
+        customer_phone="+91 91111 00001",
+        channel_partner_id=partner.id,
+        project_id=project.id,
+        assigned_salesperson_id=salesperson.id,
+        status=LeadStatus.CONVERTED.value,
+        created_at=datetime(2026, 5, 1, 10, 0),
+    )
+    lead2 = Lead(
+        id="ld-ord-2",
+        lead_code="LD-ORD-2",
+        customer_name="Customer Beta",
+        customer_phone="+91 91111 00002",
+        channel_partner_id=partner.id,
+        project_id=project.id,
+        assigned_salesperson_id=salesperson.id,
+        status=LeadStatus.CONVERTED.value,
+        created_at=datetime(2026, 5, 1, 11, 0),
+    )
+
+    # Scenario 1:
+    # Booking A (Cancelled): created 2026-05-10, cancelled 2026-05-13
+    # Booking B (Confirmed): created 2026-05-15, cancelled None
+    # Latest lifecycle events: B = 2026-05-15, A = 2026-05-13 -> Expected: [B, A]
+    #
+    # Scenario 2:
+    # Booking C (Confirmed): created 2026-06-01, cancelled None -> event = 2026-06-01
+    # Booking D (Cancelled): created 2026-05-20, cancelled 2026-06-05 -> event = 2026-06-05
+    # Even though D was created earlier than C, its cancellation is on June 5.
+    # Latest lifecycle events: D (June 5) > C (June 1) > B (May 15) > A (May 13)
+    # Expected ordering: [D, C, B, A]
+
+    bk_a = Booking(
+        id="bk-ord-a",
+        booking_reference="BK-ORD-A",
+        lead_id=lead1.id,
+        project_id=project.id,
+        channel_partner_id=partner.id,
+        salesperson_id=salesperson.id,
+        unit_number="Unit 101",
+        unit_type="2 BHK",
+        booking_date=date(2026, 5, 10),
+        booking_status=BookingStatus.CANCELLED.value,
+        booking_value=9500000.0,
+        token_amount=100000.0,
+        commission_rate_pct=2.0,
+        commission_amount=190000.0,
+        cancelled_at=datetime(2026, 5, 13, 16, 0),
+        created_at=datetime(2026, 5, 10, 11, 0),
+    )
+    bk_b = Booking(
+        id="bk-ord-b",
+        booking_reference="BK-ORD-B",
+        lead_id=lead1.id,
+        project_id=project.id,
+        channel_partner_id=partner.id,
+        salesperson_id=salesperson.id,
+        unit_number="Unit 102",
+        unit_type="2 BHK",
+        booking_date=date(2026, 5, 15),
+        booking_status=BookingStatus.CONFIRMED.value,
+        booking_value=9600000.0,
+        token_amount=100000.0,
+        commission_rate_pct=2.0,
+        commission_amount=192000.0,
+        cancelled_at=None,
+        created_at=datetime(2026, 5, 15, 14, 0),
+    )
+    bk_c = Booking(
+        id="bk-ord-c",
+        booking_reference="BK-ORD-C",
+        lead_id=lead2.id,
+        project_id=project.id,
+        channel_partner_id=partner.id,
+        salesperson_id=salesperson.id,
+        unit_number="Unit 201",
+        unit_type="3 BHK",
+        booking_date=date(2026, 6, 1),
+        booking_status=BookingStatus.CONFIRMED.value,
+        booking_value=12000000.0,
+        token_amount=100000.0,
+        commission_rate_pct=2.0,
+        commission_amount=240000.0,
+        cancelled_at=None,
+        created_at=datetime(2026, 6, 1, 10, 0),
+    )
+    bk_d = Booking(
+        id="bk-ord-d",
+        booking_reference="BK-ORD-D",
+        lead_id=lead2.id,
+        project_id=project.id,
+        channel_partner_id=partner.id,
+        salesperson_id=salesperson.id,
+        unit_number="Unit 202",
+        unit_type="3 BHK",
+        booking_date=date(2026, 5, 20),
+        booking_status=BookingStatus.CANCELLED.value,
+        booking_value=12200000.0,
+        token_amount=100000.0,
+        commission_rate_pct=2.0,
+        commission_amount=244000.0,
+        cancelled_at=datetime(2026, 6, 5, 18, 0),
+        created_at=datetime(2026, 5, 20, 12, 0),
+    )
+
+    fresh_session.add_all([partner, project, salesperson, lead1, lead2, bk_a, bk_b, bk_c, bk_d])
+    fresh_session.commit()
+
+    detail = get_partner_by_id(fresh_session, partner.id)
+    ordered_refs = [b.booking_reference for b in detail.recent_bookings]
+    assert ordered_refs == ["BK-ORD-D", "BK-ORD-C", "BK-ORD-B", "BK-ORD-A"]
+
+    # Verify all fields present in response item
+    item_d = detail.recent_bookings[0]
+    assert item_d.id == "bk-ord-d"
+    assert item_d.booking_reference == "BK-ORD-D"
+    assert item_d.customer_name == "Customer Beta"
+    assert item_d.project_name == "Harivishva Skyfinia Phase 1"
+    assert item_d.unit_number == "Unit 202"
+    assert item_d.unit_type == "3 BHK"
+    assert item_d.booking_status == "Cancelled"
+    assert item_d.booking_value == 12200000.0
+    assert item_d.token_amount == 100000.0
+    assert item_d.commission_rate_pct == 2.0
+    assert item_d.commission_amount == 244000.0
+    assert item_d.salesperson_name == "Rohit Deshmukh"
+    assert item_d.created_at == datetime(2026, 5, 20, 12, 0)
+    assert item_d.cancelled_at == datetime(2026, 6, 5, 18, 0)
+    assert item_d.booking_date == date(2026, 5, 20)
+
+
+def test_seed_42_all_partners_recent_bookings_lifecycle_ordering(seeded_client: TestClient):
+    """Verify that in the canonical SEED=42 database, recent_bookings follow lifecycle order."""
+    list_res = seeded_client.get("/api/v1/partners?page_size=50")
+    assert list_res.status_code == 200
+    partners = list_res.json()["items"]
+
+    for p in partners:
+        detail_res = seeded_client.get(f"/api/v1/partners/{p['id']}")
+        assert detail_res.status_code == 200
+        recent_bookings = detail_res.json()["recent_bookings"]
+
+        if len(recent_bookings) > 1:
+            for i in range(len(recent_bookings) - 1):
+                cur_b = recent_bookings[i]
+                next_b = recent_bookings[i + 1]
+
+                cur_event_str = cur_b["cancelled_at"] or cur_b["created_at"]
+                next_event_str = next_b["cancelled_at"] or next_b["created_at"]
+
+                cur_event = datetime.fromisoformat(cur_event_str)
+                next_event = datetime.fromisoformat(next_event_str)
+
+                assert cur_event >= next_event, (
+                    f"Partner {p['id']}: booking {cur_b['booking_reference']} (event {cur_event}) "
+                    f"must be >= next booking {next_b['booking_reference']} (event {next_event})"
+                )
+
