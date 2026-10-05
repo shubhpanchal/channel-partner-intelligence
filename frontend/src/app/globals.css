@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Pure Light Enterprise Palette */
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Primary: Refined Business Navy/Blue */
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Secondary */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Muted */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Accent */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Borders & Inputs */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.5rem;
+
+    /* Semantic Status Tokens */
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
+    --success-bg: 138.5 76.5% 96.7%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 12%;
+    --warning-bg: 48 100% 96%;
+
+    --danger: 0 84.2% 60.2%;
+    --danger-foreground: 210 40% 98%;
+    --danger-bg: 0 100% 97%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 210 40% 98%;
+    --info-bg: 204 100% 97%;
+
+    --neutral-status: 215.4 16.3% 46.9%;
+    --neutral-status-foreground: 222.2 47.4% 11.2%;
+    --neutral-status-bg: 210 40% 96.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbars for analytical tables and sidebars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(214.3 31.8% 85%);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(214.3 31.8% 75%);
+}
