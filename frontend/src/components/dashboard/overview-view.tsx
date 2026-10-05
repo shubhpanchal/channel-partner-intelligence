@@ -47,11 +47,35 @@ const SAMPLE_VELOCITY_DATA = [
   { month: "Jun", leads: 920, visits: 460, bookings: 115 },
 ];
 
-const SAMPLE_PARTNER_TIERS = [
-  { tier: "Tier 1 (Elite)", partners: 18, contribution: "52%" },
-  { tier: "Tier 2 (Growth)", partners: 45, contribution: "34%" },
-  { tier: "Tier 3 (Active)", partners: 112, contribution: "14%" },
-];
+export interface PartnerTierItem {
+  tier: string;
+  partners: number;
+  percentage: number;
+  contribution: string;
+}
+
+export const SAMPLE_PARTNER_TIERS_RAW = [
+  { tier: "Tier 1 (Elite)", partners: 18 },
+  { tier: "Tier 2 (Growth)", partners: 45 },
+  { tier: "Tier 3 (Active)", partners: 112 },
+] as const;
+
+export const TOTAL_SAMPLE_PARTNERS = SAMPLE_PARTNER_TIERS_RAW.reduce(
+  (sum, item) => sum + item.partners,
+  0
+);
+
+export const SAMPLE_PARTNER_TIERS: PartnerTierItem[] = SAMPLE_PARTNER_TIERS_RAW.map(
+  (item) => {
+    const percentage = (item.partners / TOTAL_SAMPLE_PARTNERS) * 100;
+    return {
+      tier: item.tier,
+      partners: item.partners,
+      percentage,
+      contribution: `${percentage.toFixed(1)}%`,
+    };
+  }
+);
 
 const SAMPLE_RECENT_ACTIVITIES = [
   {
