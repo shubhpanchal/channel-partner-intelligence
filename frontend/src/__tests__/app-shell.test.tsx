@@ -48,7 +48,7 @@ describe("AppShell Component", () => {
     expect(screen.getByTestId("overview-dashboard-container")).toBeInTheDocument();
   });
 
-  it("navigates to placeholder section when navigation item is clicked", () => {
+  it("navigates to partners directory when partners nav item is clicked", () => {
     renderWithProviders(<AppShell />);
 
     // Click on Partners navigation
@@ -56,6 +56,17 @@ describe("AppShell Component", () => {
     fireEvent.click(partnersNav);
 
     expect(screen.getAllByText("Channel Partners Directory").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId("partners-search-input")).toBeInTheDocument();
+  });
+
+  it("navigates to placeholder section when other navigation items are clicked", () => {
+    renderWithProviders(<AppShell />);
+
+    // Click on Leads navigation
+    const leadsNav = screen.getByTestId("nav-item-leads");
+    fireEvent.click(leadsNav);
+
+    expect(screen.getAllByText("Channel Leads Pipeline").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Scheduled for Phase 2")).toBeInTheDocument();
     expect(screen.getByTestId("placeholder-view-container")).toBeInTheDocument();
 

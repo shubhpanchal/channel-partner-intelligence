@@ -23,9 +23,9 @@ test.describe("Channel Partner Intelligence - Phase 1 Foundation E2E", () => {
     await expect(page.getByText("Visit Conversion")).toBeVisible();
     await expect(page.getByText("Bookings Velocity")).toBeVisible();
 
-    // Verify Navigation switching
-    await page.getByTestId("nav-item-partners").click();
-    await expect(page.getByTestId("app-header").getByRole("heading", { name: "Channel Partners Directory" })).toBeVisible();
+    // Verify Navigation switching to placeholder section
+    await page.getByTestId("nav-item-leads").click();
+    await expect(page.getByTestId("app-header").getByRole("heading", { name: "Channel Leads Pipeline" })).toBeVisible();
     await expect(page.getByText("Scheduled for Phase 2")).toBeVisible();
 
     // Back to overview

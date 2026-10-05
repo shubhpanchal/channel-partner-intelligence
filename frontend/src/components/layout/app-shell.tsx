@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Sidebar, NavItemKey, NAV_ITEMS } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { OverviewView } from "@/components/dashboard/overview-view";
+import { PartnersDirectoryView } from "@/components/partners/partners-directory-view";
 import { PlaceholderView } from "@/components/dashboard/placeholder-view";
 
 const SECTION_TITLES: Record<NavItemKey, { title: string; subtitle: string }> = {
@@ -73,6 +74,8 @@ export function AppShell() {
           <div className="mx-auto max-w-7xl">
             {activeKey === "overview" ? (
               <OverviewView />
+            ) : activeKey === "partners" ? (
+              <PartnersDirectoryView />
             ) : (
               <PlaceholderView
                 sectionKey={activeKey}

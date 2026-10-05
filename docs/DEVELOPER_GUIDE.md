@@ -4,12 +4,13 @@
 
 **Channel Partner Intelligence** is an enterprise-grade analytics and decision-support platform designed to monitor, analyze, and optimize channel partner (broker/agent) performance across real estate and multi-tier distribution networks.
 
-### Current Status: Phase 2C-1 — Overview Summary API & Real Dashboard Data
+### Current Status: Phase 2C-2 — Partners API & Real Partners Directory
 - **Phase 1 Complete**: Light B2B SaaS UI foundation, design tokens, reusable states, and test quality gates established.
 - **Phase 2A Complete**: Formally defined business domain model ([`docs/BUSINESS_DOMAIN.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/BUSINESS_DOMAIN.md)) and REST API contracts ([`docs/API_CONTRACTS.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/API_CONTRACTS.md)).
 - **Phase 2B Complete**: SQLAlchemy 2.0 database models, SQLite schema with foreign keys and partial unique indexes, deterministic synthetic data generator (`SEED = 42`), comprehensive data-integrity validator, and backend CLI management tools.
 - **Phase 2C-1 Complete**: First end-to-end vertical slice connecting `GET /api/v1/overview/summary` to the Next.js frontend via TanStack Query, eliminating mock data and rendering 100% database-backed metrics.
-- Strict quality gates enforced across both backend (>98% coverage) and frontend (>98% coverage).
+- **Phase 2C-2 Complete**: Second end-to-end vertical slice delivering `GET /api/v1/partners` and `GET /api/v1/partners/{id}`, real-time filtering, debounced multi-field search, zero N+1 batch-grouped SQL queries, pagination, and Partner Detail view with 4-stage conversion funnels and transaction logs.
+- Strict quality gates enforced across both backend (>96% coverage) and frontend (>98% coverage).
 
 ---
 
@@ -85,7 +86,30 @@ OverviewSummaryResponse (Pydantic v2 Schema in backend/app/schemas/overview.py)
 
 ---
 
-## 4. Database Architecture & SQLite Configuration
+## 4. Partners API & Directory Architecture (Phase 2C-2)
+
+### 4.1 Service & Aggregation Approach (Zero N+1)
+To prevent N+1 query degradation when rendering 20 to 100 partners per page, `PartnerService` executes a batched grouped aggregation strategy:
+1. **Paginated Entities**: Selects the matching page of `ChannelPartner` entities with eager joined loading of `assigned_salesperson`.
+2. **Batch Lead Statistics**: Aggregates `total_leads`, `valid_leads` (`status != 'Invalid'`), and `qualified_leads` (`qualified_at IS NOT NULL`) in a single query grouped by `channel_partner_id`.
+3. **Batch Site Visit Statistics**: Groups completed site visits and unique visited lead IDs across all page partner IDs.
+4. **Direct Booking Isolation**: Fetches confirmed/completed booking lead IDs and evaluates them against the partner's unique visited lead set in memory, ensuring that direct bookings without site visits do not artificially inflate `visit_to_booking_rate_pct`.
+5. **Memory Synthesis**: Merges database aggregates in O(N) linear time, ensuring exactly 4 database queries per paginated request regardless of page size.
+
+### 4.2 Multi-Field Search & Stable Sorting
+- **Multi-Field Partial Search**: Matches across `name`, `contact_person`, and `partner_code` using case-insensitive SQL `LIKE` queries.
+- **Deterministic Sort Ordering**: Ties in `name`, `onboarding_date`, and `tier` sort orders are broken using secondary deterministic columns (`id` / `partner_code`), preventing unstable pagination drift across page transitions.
+
+### 4.3 Frontend TanStack Query Integration
+- **API Client**: `frontend/src/lib/api/partners.ts` provides typed `fetchPartners(filters)` and `fetchPartnerById(id)`.
+- **Query Hooks**: `frontend/src/hooks/use-partners.ts` provides `usePartners(filters)` and `usePartnerDetail(partnerId)` with automated query key caching and 60-second background freshness.
+- **UI Components**:
+  - `PartnersDirectoryView`: Top controls (debounced search, tier/status/city dropdowns, sorting), responsive desktop table, accessible mobile card deck, and pagination controls.
+  - `PartnerDetailView`: Partner header with relationship manager card, 4 performance summary cards, 4-stage funnel visualization with stage-to-stage conversion rates, recent leads table (newest 10), and recent bookings table (newest 10).
+
+---
+
+## 5. Database Architecture & SQLite Configuration
 
 ### 4.1 SQLAlchemy 2.0 Models
 All database models are implemented using typed SQLAlchemy 2.0 declarative definitions in [`backend/app/models/entities.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/models/entities.py):

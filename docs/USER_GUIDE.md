@@ -58,11 +58,24 @@ The **Executive Overview** is your real-time command center for monitoring chann
 
 ---
 
-### 3.2 Partners Directory *(Scheduled for Phase 2)*
-A centralized registry of all channel partners.
-- **Partner Profiles**: Contact details, tier status, historical conversion rates, and brokerage size.
-- **Tier Management**: Automated tier qualification (Tier 1 Elite, Tier 2 Growth, Tier 3 Active).
-- **Performance Ratings**: Multi-factor scoring based on responsiveness, visit conversion, and deal velocity.
+### 3.2 Channel Partners Directory *(Phase 2C-2 — Live Database-Backed)*
+A comprehensive enterprise registry of all 175 registered channel partners powered by real-time database queries and full funnel analytics.
+
+- **Search & Multi-Criteria Filtering**:
+  - **Debounced Global Search**: Instantly find partners by commercial agency name, principal contact person, or unique partner code (e.g. `CP-1001`).
+  - **Tier Filter**: Filter by business performance classification (Tier 1 Elite, Tier 2 Growth, Tier 3 Active).
+  - **Account Status Filter**: Switch between Active and Inactive partner accounts.
+  - **Operational City Filter**: Slice partner networks by operational hub (Pune, Mumbai, Bangalore, Delhi NCR, Hyderabad).
+  - **Deterministic Sorting**: Sort partner records by Name (A-Z), Onboarding Date (Newest first), or Tier.
+- **Directory Summary Metrics**:
+  - Displays Total Leads, Milestone-Qualified Leads, Completed Site Visits, Confirmed Bookings, Site Visit → Booking Rate (excluding direct bookings), and Overall Conversion Rate for each partner.
+- **Partner Detail & Funnel Velocity**:
+  - Clicking any partner opens the dedicated **Partner Detail View**.
+  - **Profile & Relationship Manager**: Verified contact information, office neighborhood, onboarding timestamp, and assigned internal developer sales manager.
+  - **4-Stage Funnel Flow**: Visual progression through *Inbound Leads → Qualified Leads → Visited Prospects → Confirmed Bookings*, highlighting drop-offs and stage conversion ratios.
+  - **Performance Matrix**: Instant breakdown of Lead Qualification Rate, Visit Completion Rate, Qualified Lead → Visit Rate, Site Visit → Booking Rate, and Overall Conversion Rate.
+  - **Recent Activity Tables**: Inspect the latest 10 inbound customer leads and latest 10 booking closures with unit identifiers and gross contract values.
+  - **Back Navigation**: Quick return button to directory while preserving previous pagination and filter state.
 
 ---
 
