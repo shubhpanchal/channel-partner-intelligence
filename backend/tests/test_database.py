@@ -2,7 +2,9 @@
 
 from unittest.mock import patch
 
-from app.core.database import check_db_health, get_db
+from sqlalchemy import create_engine
+
+from app.core.database import check_db_health, get_db, init_db, reset_db
 
 
 def test_check_db_health_success():
@@ -26,3 +28,10 @@ def test_get_db_generator():
         next(generator)
     except StopIteration:
         pass
+
+
+def test_init_and_reset_db():
+    """Test init_db and reset_db execution on SQLite memory engine."""
+    mem_engine = create_engine("sqlite:///:memory:")
+    init_db(mem_engine)
+    reset_db(mem_engine)

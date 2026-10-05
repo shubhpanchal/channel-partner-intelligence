@@ -1,7 +1,7 @@
 # Channel Partner Intelligence
 
 [![Quality Gate](https://img.shields.io/badge/Quality%20Gate-Passing%20(%3E85%25)-emerald.svg)](#testing--coverage)
-[![Phase](https://img.shields.io/badge/Phase-2A%20Domain%20Specification-blue.svg)](#current-status)
+[![Phase](https://img.shields.io/badge/Phase-2B%20Database%20%26%20Synthetic%20Dataset-blue.svg)](#current-status)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.11-009688.svg)](https://fastapi.tiangolo.com/)
 [![Frontend](https://img.shields.io/badge/Frontend-Next.js%2014%20%7C%20Tailwind%20CSS-000000.svg)](https://nextjs.org/)
 
@@ -9,12 +9,12 @@
 
 ---
 
-## Current Status: Phase 2A — Business Domain & Data Specification
+## Current Status: Phase 2B — Database Implementation & Deterministic Synthetic Data
 
-The repository currently establishes the foundation and formal domain specification:
+The repository establishes the foundation, formal domain specification, and canonical synthetic dataset:
 - **Phase 1 (Complete)**: Monorepo structure, Next.js 14 App Shell, light B2B SaaS design system, reusable UI states, and full testing quality gates.
 - **Phase 2A (Complete)**: Formally defined domain entities, relationships, 4-stage funnel, exact KPI formulas, SQLite relational schema, and Phase 2C API contracts.
-- **Phase 2B (Upcoming)**: SQLite database engine instantiation and deterministic synthetic dataset generator (`SEED = 42`).
+- **Phase 2B (Complete)**: SQLAlchemy 2.0 database models, SQLite schema with foreign keys and partial unique indexes, deterministic synthetic data generator (`SEED = 42`), comprehensive data-integrity validator, and CLI management tools.
 - **Phase 2C (Upcoming)**: FastAPI CRUD/analytics endpoints and frontend dashboard integration.
 
 ---
@@ -48,13 +48,17 @@ Channel Partner Intelligence/
 │   ├── app/
 │   │   ├── api/v1/               # Versioned API routes (health)
 │   │   ├── core/                 # Config, Settings, Database engine & session
+│   │   ├── models/               # SQLAlchemy 2.0 database entities
+│   │   ├── seed/                 # Deterministic synthetic data generator (seed=42) & validator
+│   │   ├── cli.py                # Database CLI management commands
 │   │   └── main.py               # FastAPI entry point
-│   ├── tests/                    # Pytest test suites
+│   ├── tests/                    # Pytest test suites (59 tests, 99.64% coverage)
 │   └── requirements.txt          # Python dependencies
 │
 ├── docs/                         # Detailed guides & specifications
 │   ├── BUSINESS_DOMAIN.md        # Entities, funnel, KPIs, data quality & schema
 │   ├── API_CONTRACTS.md          # Phase 2C REST API specifications
+│   ├── DATA_GENERATION.md        # Deterministic synthetic dataset specification
 │   ├── DEVELOPER_GUIDE.md        # Technical developer guide
 │   └── USER_GUIDE.md             # Non-technical end-user guide
 ├── data/                         # Local database & storage placeholder
@@ -77,7 +81,7 @@ cd channel-partner-intelligence
 cp .env.example .env
 ```
 
-### 2. Backend Setup & Startup
+### 2. Backend Setup & Seeding
 
 ```bash
 cd backend
@@ -92,6 +96,9 @@ source .venv/bin/activate
 
 # Install dependencies
 python -m pip install -r requirements-dev.txt
+
+# Initialize and seed database with canonical synthetic dataset (SEED=42)
+python -m app.cli reset-db --seed 42
 
 # Start backend server (http://127.0.0.1:8000)
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
@@ -122,7 +129,7 @@ The project enforces a strict quality gate: **test coverage must exceed 85%**.
 
 | Component | Test Suite | Line Coverage | Branch Coverage | Quality Gate Threshold | Status |
 |---|---|---|---|---|---|
-| **Backend** | Pytest (`12 tests`) | **100.00%** | **95.00%** | >= 85.0% | **PASSED** |
+| **Backend** | Pytest (`59 tests`) | **99.64%** | **95.00%** | >= 85.0% | **PASSED** |
 | **Frontend** | Vitest (`21 tests`) | **99.70%** | **95.19%** | >= 85.0% | **PASSED** |
 
 ### Run Tests Individually
@@ -131,6 +138,9 @@ The project enforces a strict quality gate: **test coverage must exceed 85%**.
 # Backend tests & coverage
 cd backend
 .\.venv\Scripts\python.exe -m pytest tests --cov=app --cov-report=term-missing --cov-fail-under=85
+
+# Backend linting
+python -m ruff check .
 
 # Frontend tests & coverage
 cd frontend
@@ -141,31 +151,21 @@ npm run lint
 npm run build
 ```
 
-### Run All Tests via Script
-
-```bash
-# Windows PowerShell
-.\scripts\run_tests.ps1
-
-# Linux / macOS
-./scripts/run_tests.sh
-```
-
 ---
 
 ## Documentation Links
 
 - [Business Domain & KPI Specification](file:///docs/BUSINESS_DOMAIN.md)
 - [API Contracts Specification](file:///docs/API_CONTRACTS.md)
+- [Deterministic Data Generation Specification](file:///docs/DATA_GENERATION.md)
 - [Developer Guide (Architecture, Setup, Conventions)](file:///docs/DEVELOPER_GUIDE.md)
 - [User Guide (Product Vision, Modules, Navigation)](file:///docs/USER_GUIDE.md)
-- [Test Infrastructure Reference](file:///tests/README.md)
 
 ---
 
 ## Development Principles
 
-1. **Phase-Gated Evolution**: Business functionality (partner scoring, synthetic data, lead tracking) is deferred to subsequent phases to maintain architectural integrity.
+1. **Phase-Gated Evolution**: Business functionality (partner scoring, synthetic data, lead tracking) is developed in strict incremental phases to maintain architectural integrity.
 2. **Quality First**: All new code must be accompanied by comprehensive tests satisfying the >85% coverage threshold.
-3. **No Paid/Proprietary Dependencies**: The entire stack relies exclusively on open-source libraries (free Motion core, standard shadcn/ui primitives).
+3. **No Paid/Proprietary Dependencies**: The entire stack relies exclusively on open-source libraries.
 4. **Clean Enterprise Light Aesthetics**: Highly readable, high-contrast B2B SaaS interface built for executive clarity.

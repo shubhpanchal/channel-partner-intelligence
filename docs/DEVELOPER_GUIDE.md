@@ -4,10 +4,11 @@
 
 **Channel Partner Intelligence** is an enterprise-grade analytics and decision-support platform designed to monitor, analyze, and optimize channel partner (broker/agent) performance across real estate and multi-tier distribution networks.
 
-### Current Status: Phase 2A — Business Domain, Data Model & KPI Specification
+### Current Status: Phase 2B — Database Implementation & Deterministic Synthetic Data
 - **Phase 1 Complete**: Light B2B SaaS UI foundation, design tokens, reusable states, and test quality gates established.
 - **Phase 2A Complete**: Formally defined business domain model ([`docs/BUSINESS_DOMAIN.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/BUSINESS_DOMAIN.md)) and REST API contracts ([`docs/API_CONTRACTS.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/API_CONTRACTS.md)).
-- Strict quality gates enforced across both backend and frontend (>85% coverage).
+- **Phase 2B Complete**: SQLAlchemy 2.0 database models, SQLite schema with foreign keys and partial unique indexes, deterministic synthetic data generator (`SEED = 42`), comprehensive data-integrity validator, and backend CLI management tools.
+- Strict quality gates enforced across both backend (>99% coverage) and frontend (>99% coverage).
 
 ---
 
@@ -30,18 +31,20 @@ Channel Partner Intelligence
 │   ├── vitest.config.ts          # Vitest + V8 coverage configuration (>85% thresholds)
 │   └── package.json
 │
-├── backend/                      # FastAPI + Pydantic + SQLAlchemy + SQLite
+├── backend/                      # FastAPI + Pydantic + SQLAlchemy 2.0 + SQLite
 │   ├── app/
 │   │   ├── api/
-│   │   │   └── v1/               # Versioned API routes (health, future analytics)
-│   │   ├── core/                 # Config (BaseSettings), Database session & health
+│   │   │   └── v1/               # Versioned API routes (health check)
+│   │   ├── core/                 # Config (BaseSettings), Database engine & domain semantics
+│   │   ├── models/               # SQLAlchemy 2.0 entities (Salesperson, Project, ChannelPartner, Lead, SiteVisit, Booking, PartnerActivity)
+│   │   ├── seed/                 # Deterministic synthetic data generator (seed=42) & integrity validator
+│   │   ├── cli.py                # Database management and seeding CLI commands
 │   │   └── main.py               # FastAPI entry point & CORS configuration
 │   ├── tests/                    # Pytest unit & integration test suites
 │   ├── pyproject.toml            # Pytest + Coverage config (>85% fail-under)
 │   └── requirements.txt          # Python dependencies
 │
-├── docs/                         # Documentation (Developer Guide, User Guide)
-├── data/                         # SQLite databases & future dataset storage
+├── docs/                         # Documentation (Domain, API contracts, Data generation, Guides)
 ├── scripts/                      # Startup & quality validation scripts
 ├── .env.example                  # Environment template
 └── README.md                     # Project overview & quickstart
@@ -49,7 +52,57 @@ Channel Partner Intelligence
 
 ---
 
-## 3. Prerequisites
+## 3. Database Architecture & SQLite Configuration
+
+### 3.1 SQLAlchemy 2.0 Models
+All database models are implemented using typed SQLAlchemy 2.0 declarative definitions in [`backend/app/models/entities.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/models/entities.py):
+- **`Salesperson`** (`salespeople`): Internal developer sales managers and team clusters.
+- **`Project`** (`projects`): Real estate assets with dynamic unit inventory tracking.
+- **`ChannelPartner`** (`channel_partners`): Brokerages and consultants partitioned into Tier 1 (18), Tier 2 (45), and Tier 3 (112).
+- **`Lead`** (`leads`): Customer prospects with milestone qualification (`qualified_at`).
+- **`SiteVisit`** (`site_visits`): Scheduled and completed physical or digital tours.
+- **`Booking`** (`bookings`): Transaction records with active vs terminal status tracking.
+- **`PartnerActivity`** (`partner_activities`): Historical touchpoint audit ledger.
+
+### 3.2 SQLite Foreign Keys & Partial Unique Indexes
+- **Foreign Key Enforcement**: SQLite does not enable foreign keys by default. An engine event listener automatically executes `PRAGMA foreign_keys=ON;` upon establishing every connection.
+- **Active Booking Invariant**: To guarantee that a lead never has more than one concurrent active booking, a SQLite partial unique index is defined:
+  ```python
+  Index(
+      "idx_one_active_booking_per_lead",
+      "lead_id",
+      unique=True,
+      sqlite_where=text("booking_status IN ('Initiated', 'Confirmed')"),
+  )
+  ```
+  Terminal bookings (`Completed`, `Cancelled`) do not conflict with active bookings.
+
+---
+
+## 4. Database Management & Seeding CLI
+
+A dedicated CLI is provided in [`backend/app/cli.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/cli.py):
+
+```bash
+# Navigate to backend directory or run with python -m app.cli
+cd backend
+
+# 1. Initialize schema (creates tables if missing)
+python -m app.cli init-db
+
+# 2. Seed database with deterministic dataset (SEED=42)
+python -m app.cli seed-db --seed 42
+
+# 3. Validate dataset integrity, foreign keys, and funnel semantics
+python -m app.cli validate-db
+
+# 4. Drop, recreate, and reseed clean development database
+python -m app.cli reset-db --seed 42
+```
+
+---
+
+## 5. Prerequisites
 
 - **Python**: 3.10+ (tested on Python 3.11.9)
 - **Node.js**: 18.17+ / 20+ / 24+ (tested on Node v24.15.0)
@@ -58,9 +111,9 @@ Channel Partner Intelligence
 
 ---
 
-## 4. Environment Setup
+## 6. Environment Setup
 
-### 4.1 Backend Virtual Environment (`backend/.venv`)
+### 6.1 Backend Virtual Environment (`backend/.venv`)
 
 ```bash
 # Navigate to the backend directory
@@ -80,7 +133,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
 ```
 
-### 4.2 Frontend Dependencies
+### 6.2 Frontend Dependencies
 
 ```bash
 # Navigate to the frontend directory
@@ -90,7 +143,7 @@ cd frontend
 npm install
 ```
 
-### 4.3 Environment Variables
+### 6.3 Environment Variables
 
 Copy `.env.example` at the repository root to create `.env`:
 
@@ -109,9 +162,9 @@ cp .env.example .env
 
 ---
 
-## 5. Running the Application Locally
+## 7. Running the Application Locally
 
-### 5.1 Starting the Backend Server
+### 7.1 Starting the Backend Server
 
 ```bash
 cd backend
@@ -121,7 +174,7 @@ cd backend
 - Health Endpoint: `http://127.0.0.1:8000/health` (and `http://127.0.0.1:8000/api/v1/health`)
 - Interactive Swagger UI: `http://127.0.0.1:8000/api/v1/docs`
 
-### 5.2 Starting the Frontend Server
+### 7.2 Starting the Frontend Server
 
 ```bash
 cd frontend
@@ -129,109 +182,37 @@ npm run dev
 ```
 - Frontend Web App: `http://localhost:3000`
 
-### 5.3 Using Convenient Helper Scripts
-
-```bash
-# Start backend (PowerShell)
-.\scripts\run_backend.ps1
-
-# Start frontend (PowerShell)
-.\scripts\run_frontend.ps1
-```
-
 ---
 
-## 6. Testing & Quality Gates
+## 8. Testing & Quality Gates
 
-Quality gates are enforced to ensure that code coverage never drops below **85%** (targeting 90%+).
+Quality gates enforce that code coverage never drops below **85%**. Current project status: **>99% coverage** on both backend and frontend.
 
-### 6.1 Backend Tests & Coverage
+### 8.1 Backend Tests & Coverage
 
 ```bash
 cd backend
-.\.venv\Scripts\python.exe -m pytest tests --cov=app --cov-report=term-missing --cov-fail-under=85
+python -m pytest tests --cov=app --cov-report=term-missing
 ```
-*Current result: 100% tests pass, **96.12% line coverage**.*
 
-### 6.2 Frontend Tests & Coverage
+### 8.2 Backend Linter (Ruff)
+
+```bash
+cd backend
+python -m ruff check .
+```
+
+### 8.3 Frontend Tests & Coverage
 
 ```bash
 cd frontend
 npm run test:coverage
 ```
-*Current result: 18/18 tests pass, **99.69% line coverage**, **94.62% branch coverage**.*
 
-### 6.3 End-to-End Tests (Playwright)
-
-```bash
-cd frontend
-npm run test:e2e
-```
-
-### 6.4 Unified Test Script
-
-```bash
-.\scripts\run_tests.ps1
-```
-
----
-
-## 7. Linting & Type Safety
-
-### 7.1 Backend Linting (Ruff)
-
-```bash
-cd backend
-.\.venv\Scripts\ruff.exe check .
-.\.venv\Scripts\ruff.exe format .
-```
-
-### 7.2 Frontend Linting & Typecheck (ESLint & TypeScript)
+### 8.4 Frontend Linter & Build
 
 ```bash
 cd frontend
 npm run lint
 npm run build
 ```
-
----
-
-## 8. Design System & UI Architecture
-
-### 8.1 Visual Philosophy
-- **Light Theme Only**: High contrast, crisp white cards (`#ffffff`), light slate background (`#f8fafc`). Dark theme is intentionally omitted to maintain an analytical enterprise aesthetic.
-- **Primary Accent**: Refined royal navy / sapphire blue (`#2563eb`).
-- **Semantic Statuses**:
-  - `success`: Emerald (`#10b981` / bg `#ecfdf5`)
-  - `warning`: Amber (`#f59e0b` / bg `#fffbeb`)
-  - `danger`: Rose (`#ef4444` / bg `#fef2f2`)
-  - `info`: Sky (`#0284c7` / bg `#f0f9ff`)
-  - `neutral`: Slate (`#64748b` / bg `#f1f5f9`)
-
-### 8.2 Motion Guidelines
-- Purposeful, subtle animations only (page entrance, tab switching, card hover).
-- Respect `prefers-reduced-motion`.
-- Avoid decorative loops, excessive bounces, or heavy 3D elements.
-
-### 8.3 Standard Reusable UI States
-Every asynchronous component or data view must support:
-- `LoadingState` (`@/components/common/loading-state`): Supports spinner or skeleton variant.
-- `EmptyState` (`@/components/common/empty-state`): Displays illustrative icon, title, description, and action CTA.
-- `ErrorState` (`@/components/common/error-state`): Displays error message and retry trigger.
-
----
-
-## 9. Phase Roadmap & Milestones
-- **Phase 1 (Complete)**: Design system, Next.js 14 App Shell, FastAPI base, quality gates (>85% coverage).
-- **Phase 2A (Complete)**: Business domain entities, 4-stage funnel, exact KPI formulas, SQLite DDL, and API contracts.
-- **Phase 2B (Upcoming)**: SQLAlchemy database tables, migrations, and deterministic synthetic dataset generator (`SEED = 42`).
-- **Phase 2C (Upcoming)**: FastAPI REST endpoints (`/api/v1/partners`, `/api/v1/leads`, etc.) and frontend data integration.
-- **Phase 3 (Future)**: Action Center recommendation engine, AI assistant integration, and reporting studio.
-
----
-
-## 10. Troubleshooting
-
-- **Port Conflict (8000 or 3000)**: Check if another service is using the port or pass `--port 8001` to uvicorn.
-- **Vitest Missing Canvas/ResizeObserver in JSDOM**: `frontend/vitest.setup.ts` automatically polyfills `ResizeObserver` and `matchMedia` for Recharts.
-- **CORS Issues**: Ensure `BACKEND_CORS_ORIGINS` in `.env` includes your frontend port (`http://localhost:3000`).

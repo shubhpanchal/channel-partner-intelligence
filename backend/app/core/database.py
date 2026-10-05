@@ -1,8 +1,9 @@
-"""Database engine, session management, and base models."""
+"""Database engine, session management, event hooks, and base metadata."""
 
 from typing import Generator
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from app.core.config import settings
@@ -15,9 +16,22 @@ if settings.DATABASE_URL.startswith("sqlite"):
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args=connect_args,
-    echo=settings.DEBUG,
+    echo=False,
     future=True,
 )
+
+
+# SQLite Foreign Key Enforcer
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    """Enable foreign key constraints for SQLite connections."""
+    try:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+    except Exception:
+        pass
+
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -46,3 +60,19 @@ def check_db_health() -> bool:
         return True
     except Exception:
         return False
+
+
+def init_db(target_engine: Engine = engine) -> None:
+    """Create all tables in the database if they do not exist."""
+    # Ensure all models are registered with Base.metadata
+    import app.models  # noqa: F401
+
+    Base.metadata.create_all(bind=target_engine)
+
+
+def reset_db(target_engine: Engine = engine) -> None:
+    """Drop and recreate all tables in the database (development/test use)."""
+    import app.models  # noqa: F401
+
+    Base.metadata.drop_all(bind=target_engine)
+    Base.metadata.create_all(bind=target_engine)
