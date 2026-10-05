@@ -4,15 +4,10 @@
 
 **Channel Partner Intelligence** is an enterprise-grade analytics and decision-support platform designed to monitor, analyze, and optimize channel partner (broker/agent) performance across real estate and multi-tier distribution networks.
 
-### Current Status: Phase 1 — Foundation, Design System & Quality Gates
-Phase 1 establishes a rock-solid, production-quality foundation with:
-- Strict separation between frontend and backend.
-- A light, enterprise B2B SaaS design system (no dark theme).
-- Modern component primitives built with shadcn/ui principles.
-- Purposeful motion and layout transitions.
-- Reusable state patterns (Loading, Empty, Error).
-- Automated test suites with **>85% coverage quality gates**.
-- Standardized environment handling and configuration.
+### Current Status: Phase 2A — Business Domain, Data Model & KPI Specification
+- **Phase 1 Complete**: Light B2B SaaS UI foundation, design tokens, reusable states, and test quality gates established.
+- **Phase 2A Complete**: Formally defined business domain model ([`docs/BUSINESS_DOMAIN.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/BUSINESS_DOMAIN.md)) and REST API contracts ([`docs/API_CONTRACTS.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/API_CONTRACTS.md)).
+- Strict quality gates enforced across both backend and frontend (>85% coverage).
 
 ---
 
@@ -226,10 +221,12 @@ Every asynchronous component or data view must support:
 
 ---
 
-## 9. Future Phase Roadmap
-
-- **Phase 2**: Partner registry, lead pipeline attribution, site visit logs, bookings velocity, SQLite schema expansion, and synthetic dataset generation.
-- **Phase 3**: Action Center algorithmic triggers, AI assistant integration, advanced churn warning indicators, and reporting studio.
+## 9. Phase Roadmap & Milestones
+- **Phase 1 (Complete)**: Design system, Next.js 14 App Shell, FastAPI base, quality gates (>85% coverage).
+- **Phase 2A (Complete)**: Business domain entities, 4-stage funnel, exact KPI formulas, SQLite DDL, and API contracts.
+- **Phase 2B (Upcoming)**: SQLAlchemy database tables, migrations, and deterministic synthetic dataset generator (`SEED = 42`).
+- **Phase 2C (Upcoming)**: FastAPI REST endpoints (`/api/v1/partners`, `/api/v1/leads`, etc.) and frontend data integration.
+- **Phase 3 (Future)**: Action Center recommendation engine, AI assistant integration, and reporting studio.
 
 ---
 

@@ -1,7 +1,7 @@
 # Channel Partner Intelligence
 
 [![Quality Gate](https://img.shields.io/badge/Quality%20Gate-Passing%20(%3E85%25)-emerald.svg)](#testing--coverage)
-[![Phase](https://img.shields.io/badge/Phase-1%20Foundation%20Live-blue.svg)](#current-status)
+[![Phase](https://img.shields.io/badge/Phase-2A%20Domain%20Specification-blue.svg)](#current-status)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.11-009688.svg)](https://fastapi.tiangolo.com/)
 [![Frontend](https://img.shields.io/badge/Frontend-Next.js%2014%20%7C%20Tailwind%20CSS-000000.svg)](https://nextjs.org/)
 
@@ -9,18 +9,13 @@
 
 ---
 
-## Current Status: Phase 1 — Foundation
+## Current Status: Phase 2A — Business Domain & Data Specification
 
-This repository contains the completed **Phase 1 Foundation, Design System, and Quality Gates**.
-
-In this phase:
-- Modern monorepo layout with clear separation between `frontend/` and `backend/`.
-- Enterprise light-themed B2B SaaS design system (no dark mode).
-- Standardized UI component primitives using shadcn/ui and Radix UI.
-- Reusable UI state patterns (`LoadingState`, `EmptyState`, `ErrorState`).
-- Purposeful motion design powered by Framer Motion.
-- Automated testing infrastructure with strict **>85% code coverage quality gates**.
-- Complete developer and non-technical business user documentation.
+The repository currently establishes the foundation and formal domain specification:
+- **Phase 1 (Complete)**: Monorepo structure, Next.js 14 App Shell, light B2B SaaS design system, reusable UI states, and full testing quality gates.
+- **Phase 2A (Complete)**: Formally defined domain entities, relationships, 4-stage funnel, exact KPI formulas, SQLite relational schema, and Phase 2C API contracts.
+- **Phase 2B (Upcoming)**: SQLite database engine instantiation and deterministic synthetic dataset generator (`SEED = 42`).
+- **Phase 2C (Upcoming)**: FastAPI CRUD/analytics endpoints and frontend dashboard integration.
 
 ---
 
@@ -57,7 +52,9 @@ Channel Partner Intelligence/
 │   ├── tests/                    # Pytest test suites
 │   └── requirements.txt          # Python dependencies
 │
-├── docs/                         # Detailed guides
+├── docs/                         # Detailed guides & specifications
+│   ├── BUSINESS_DOMAIN.md        # Entities, funnel, KPIs, data quality & schema
+│   ├── API_CONTRACTS.md          # Phase 2C REST API specifications
 │   ├── DEVELOPER_GUIDE.md        # Technical developer guide
 │   └── USER_GUIDE.md             # Non-technical end-user guide
 ├── data/                         # Local database & storage placeholder
@@ -123,10 +120,10 @@ npm run dev
 
 The project enforces a strict quality gate: **test coverage must exceed 85%**.
 
-| Component | Test Suite | Line Coverage | Quality Gate Threshold | Status |
-|---|---|---|---|---|
-| **Backend** | Pytest (`12 tests`) | **96.12%** | >= 85.0% | **PASSED** |
-| **Frontend** | Vitest (`18 tests`) | **99.69%** | >= 85.0% | **PASSED** |
+| Component | Test Suite | Line Coverage | Branch Coverage | Quality Gate Threshold | Status |
+|---|---|---|---|---|---|
+| **Backend** | Pytest (`12 tests`) | **100.00%** | **95.00%** | >= 85.0% | **PASSED** |
+| **Frontend** | Vitest (`21 tests`) | **99.70%** | **95.19%** | >= 85.0% | **PASSED** |
 
 ### Run Tests Individually
 
@@ -158,6 +155,8 @@ npm run build
 
 ## Documentation Links
 
+- [Business Domain & KPI Specification](file:///docs/BUSINESS_DOMAIN.md)
+- [API Contracts Specification](file:///docs/API_CONTRACTS.md)
 - [Developer Guide (Architecture, Setup, Conventions)](file:///docs/DEVELOPER_GUIDE.md)
 - [User Guide (Product Vision, Modules, Navigation)](file:///docs/USER_GUIDE.md)
 - [Test Infrastructure Reference](file:///tests/README.md)
