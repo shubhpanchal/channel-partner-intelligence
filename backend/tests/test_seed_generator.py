@@ -1,7 +1,6 @@
-"""Tests for deterministic synthetic data generation."""
+"""Tests for deterministic synthetic data generation and lifecycle semantics."""
 
-
-from app.models import ChannelPartner, Lead, PartnerTier
+from app.models import ChannelPartner, Lead, LeadStatus, PartnerTier
 from app.seed.constants import TARGET_PARTNER_DISTRIBUTION
 from app.seed.generator import generate_synthetic_dataset, seed_database
 
@@ -85,14 +84,87 @@ def test_milestone_qualification_retention():
             "Site Visit Scheduled",
             "Site Visit Completed",
             "Booking Initiated",
-            "Booking Confirmed",
+            "Converted",
         ]:
             assert lead["qualified_at"] is not None
 
 
-def test_direct_bookings_isolation():
-    """Verify that direct bookings (without completed visits) exist in dataset."""
+def test_lead_status_enum_has_no_booking_confirmed():
+    """Verify that 'Booking Confirmed' is not in the LeadStatus enum."""
+    lead_status_values = [status.value for status in LeadStatus]
+    assert "Booking Confirmed" not in lead_status_values
+    assert "Converted" in lead_status_values
+    assert "Booking Initiated" in lead_status_values
+
+
+def test_initiated_booking_lifecycle_semantics():
+    """Verify that leads with Initiated bookings have status='Booking Initiated'."""
     data = generate_synthetic_dataset(seed=42)
+    lead_lookup = {ld["id"]: ld for ld in data["leads"]}
+
+    initiated_bookings = [b for b in data["bookings"] if b["booking_status"] == "Initiated"]
+    assert len(initiated_bookings) > 0, "Dataset should contain initiated bookings"
+
+    for booking in initiated_bookings:
+        lead = lead_lookup[booking["lead_id"]]
+        assert lead["status"] == "Booking Initiated"
+        assert lead["converted_at"] is None
+
+
+def test_confirmed_and_completed_booking_lifecycle_semantics():
+    """Verify that leads with Confirmed or Completed bookings have status='Converted'."""
+    data = generate_synthetic_dataset(seed=42)
+    lead_lookup = {ld["id"]: ld for ld in data["leads"]}
+
+    closed_bookings = [
+        b for b in data["bookings"] if b["booking_status"] in ("Confirmed", "Completed")
+    ]
+    assert len(closed_bookings) > 0
+
+    for booking in closed_bookings:
+        lead = lead_lookup[booking["lead_id"]]
+        assert lead["status"] == "Converted"
+        assert lead["converted_at"] is not None
+        assert lead["converted_at"].date() == booking["booking_date"]
+
+
+def test_cancelled_historical_booking_does_not_falsely_convert_lead():
+    """Verify that cancelled bookings do not cause a lead to be falsely marked Converted."""
+    data = generate_synthetic_dataset(seed=42)
+    lead_lookup = {ld["id"]: ld for ld in data["leads"]}
+
+    # Find leads with cancelled bookings
+    leads_with_cancelled_bookings = {
+        b["lead_id"] for b in data["bookings"] if b["booking_status"] == "Cancelled"
+    }
+    assert len(leads_with_cancelled_bookings) > 0
+
+    for lead_id in leads_with_cancelled_bookings:
+        lead_bookings = [b for b in data["bookings"] if b["lead_id"] == lead_id]
+        active_bookings = [
+            b for b in lead_bookings
+            if b["booking_status"] in ("Initiated", "Confirmed", "Completed")
+        ]
+
+        lead = lead_lookup[lead_id]
+        if not active_bookings:
+            # Only has cancelled booking: should not be Converted
+            assert lead["status"] != "Converted"
+            assert lead["converted_at"] is None
+        else:
+            active_b = active_bookings[0]
+            if active_b["booking_status"] == "Initiated":
+                assert lead["status"] == "Booking Initiated"
+                assert lead["converted_at"] is None
+            elif active_b["booking_status"] in ("Confirmed", "Completed"):
+                assert lead["status"] == "Converted"
+                assert lead["converted_at"] is not None
+
+
+def test_direct_bookings_isolation_and_converted_status():
+    """Verify direct bookings exist and their leads are genuinely Converted."""
+    data = generate_synthetic_dataset(seed=42)
+    lead_lookup = {ld["id"]: ld for ld in data["leads"]}
 
     leads_with_completed_visits = {
         v["lead_id"] for v in data["site_visits"] if v["status"] == "Completed"
@@ -116,6 +188,12 @@ def test_direct_bookings_isolation():
     assert len(direct_bookings) + len(visited_bookings) == sum(
         1 for b in data["bookings"] if b["booking_status"] == "Confirmed"
     )
+
+    # Check direct booking leads are genuinely Converted
+    for booking in direct_bookings:
+        lead = lead_lookup[booking["lead_id"]]
+        assert lead["status"] == "Converted"
+        assert lead["converted_at"] is not None
 
 
 def test_synthetic_commission_flag():

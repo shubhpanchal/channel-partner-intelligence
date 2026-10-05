@@ -71,7 +71,6 @@ class LeadStatus(str, enum.Enum):
     SITE_VISIT_SCHEDULED = "Site Visit Scheduled"
     SITE_VISIT_COMPLETED = "Site Visit Completed"
     BOOKING_INITIATED = "Booking Initiated"
-    BOOKING_CONFIRMED = "Booking Confirmed"
     CONVERTED = "Converted"
     LOST = "Lost"
     INVALID = "Invalid"

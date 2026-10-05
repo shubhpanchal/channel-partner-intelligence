@@ -27,18 +27,18 @@ When seeded with `SEED = 42`, the generator produces the exact canonical benchma
 | ↳ *Tier 1 (Elite)* | 18 | **18** | Pass |
 | ↳ *Tier 2 (Growth)* | 45 | **45** | Pass |
 | ↳ *Tier 3 (Active)* | 112 | **112** | Pass |
-| **Leads** | 3,800 – 4,200 | **4,020** | Pass |
-| ↳ *Valid Leads* | — | **3,908** (97.2%) | Pass |
-| ↳ *Qualified Leads (`qualified_at IS NOT NULL`)* | — | **2,891** (73.98% qualification) | Pass |
+| **Leads** | 3,800 – 4,200 | **4,018** | Pass |
+| ↳ *Valid Leads* | — | **3,906** (97.2%) | Pass |
+| ↳ *Qualified Leads (`qualified_at IS NOT NULL`)* | — | **2,891** (74.01% qualification) | Pass |
 | **Site Visits** | 1,800 – 2,200 | **2,010** | Pass |
 | ↳ *Completed Site Visits* | — | **1,743** (86.72% completion) | Pass |
 | ↳ *Unique Visited Leads* | — | **1,472** | Pass |
-| **Bookings** | 400 – 500 Confirmed | **483** total records | Pass |
-| ↳ *Confirmed Bookings* | 400 – 500 | **454** (94.0%) | Pass |
+| **Bookings** | 400 – 500 Confirmed | **496** total records | Pass |
+| ↳ *Confirmed Bookings* | 400 – 500 | **454** | Pass |
 | ↳ *Visited Leads Confirmed Bookings* | — | **440** (96.9%) | Pass |
 | ↳ *Direct Confirmed Bookings (No Site Visit)* | — | **14** (3.1%) | Pass |
 | ↳ *Cancelled Booking Records* | — | **29** (Historical audit) | Pass |
-| **Partner Activities** | Sufficient for activity feed | **6,228** | Pass |
+| **Partner Activities** | Sufficient for activity feed | **6,226** | Pass |
 
 ---
 
@@ -102,17 +102,28 @@ pie title Partner Distribution by Tier (175 Total)
 
 ## 4. Lifecycle & Semantics Enforcement
 
-### 4.1 Milestone Qualification Retention
+### 4.1 Lead & Booking Lifecycle Consistency
+The lifecycle strictly follows the approved state machine:
+`New` $\rightarrow$ `Contacted` $\rightarrow$ `Qualified` $\rightarrow$ `Site Visit Scheduled` $\rightarrow$ `Site Visit Completed` $\rightarrow$ `Booking Initiated` $\rightarrow$ `Converted` (or `Lost` / `Invalid`).
+
+| Booking Status | Associated Lead Status | `lead.converted_at` | Notes |
+| :--- | :--- | :--- | :--- |
+| **`Initiated`** | **`Booking Initiated`** | `NULL` (None) | Token payment in progress; deal is not yet finalized. |
+| **`Confirmed`** | **`Converted`** | Booking / Confirmation Timestamp | Transaction confirmed; counted as converted deal. |
+| **`Completed`** | **`Converted`** | Booking Timestamp | Fully executed transaction. |
+| **`Cancelled`** | *Pre-existing Status* (`Lost` or `Booking Initiated`) | `NULL` (None) | Historical cancelled booking does NOT falsely convert a lead. |
+
+### 4.2 Milestone Qualification Retention
 - Qualification is recorded via `qualified_at`.
 - If a qualified lead subsequently drops out (`status = "Lost"`), the `qualified_at` timestamp is **strictly retained** (1,155 leads in the canonical dataset). This ensures historical cohort metrics remain accurate.
 
-### 4.2 Direct Bookings vs. Site Visit Bookings
+### 4.3 Direct Bookings vs. Site Visit Bookings
 - **Direct Bookings**: 14 confirmed bookings occur without a preceding completed site visit (e.g. NRI buyers, repeat investors).
 - **Visit $\rightarrow$ Booking Isolation**:
   $$\text{Visit to Booking Rate} = \frac{440 \text{ visited confirmed bookings}}{1,472 \text{ unique visited leads}} = 29.89\%$$
   Direct bookings are cleanly excluded from the numerator and denominator of this metric.
 
-### 4.3 Active Booking Invariant
+### 4.4 Active Booking Invariant
 - A partial unique index on SQLite enforces at most 1 active booking (`Initiated` or `Confirmed`) per lead.
 - Historical terminal records (`Cancelled`, `Completed`) remain queryable for lifecycle audit trails.
 

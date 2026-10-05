@@ -522,9 +522,7 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                     books_unit = positive_outcome and (rng.random() < booking_close_prob)
 
                     if books_unit:
-                        lead_record["status"] = "Converted"
                         booking_date_dt = visited_at + timedelta(days=rng.randint(2, 14))
-                        lead_record["converted_at"] = booking_date_dt
 
                         # Earlier cancelled booking attempt (~6% of booking leads)
                         if rng.random() < 0.06:
@@ -553,7 +551,7 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                             })
                             booking_id_counter += 1
 
-                        # Active / Confirmed Booking
+                        # Active / Confirmed / Completed Booking
                         booking_id = f"bk-{booking_id_counter:06d}"
                         booking_ref = f"BK-2026-{booking_id_counter:06d}"
                         val_add = Decimal(str(rng.randint(0, 6) * 400000))
@@ -570,6 +568,14 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                             b_status = "Completed"
                         else:
                             b_status = "Initiated"
+
+                        # Map lead status according to booking lifecycle semantics
+                        if b_status == "Initiated":
+                            lead_record["status"] = "Booking Initiated"
+                            lead_record["converted_at"] = None
+                        else:  # "Confirmed" or "Completed"
+                            lead_record["status"] = "Converted"
+                            lead_record["converted_at"] = booking_date_dt
 
                         bookings.append({
                             "id": booking_id,

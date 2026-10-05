@@ -249,7 +249,7 @@ def test_booking_model_and_partial_unique_index(db_session):
         project_id="PRJ-0001",
         customer_name="Vikram",
         customer_phone="123",
-        status=LeadStatus.BOOKING_CONFIRMED.value,
+        status=LeadStatus.CONVERTED.value,
     )
     db_session.add_all([sp, proj, cp, lead])
     db_session.commit()
