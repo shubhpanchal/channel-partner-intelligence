@@ -198,6 +198,25 @@ class PartnerRecentBookingItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PartnerMonthlyTrendItem(BaseModel):
+    """Monthly progression data point for partner funnel trends."""
+
+    month: str = Field(..., description="Abbreviated month name (e.g. 'Jan')")
+    month_num: int = Field(..., description="Month number 1-12")
+    leads: int = Field(0, description="Valid leads received in this month (status != 'Invalid')")
+    completed_visits: int = Field(0, description="Completed site visits in this month")
+    bookings: int = Field(0, description="Confirmed or completed bookings in this month")
+
+
+class PartnerProjectContributionItem(BaseModel):
+    """Contribution breakdown of confirmed bookings by project."""
+
+    project_id: str = Field(..., description="Project identifier")
+    project_name: str = Field(..., description="Project name")
+    bookings: int = Field(0, description="Confirmed or completed bookings count")
+    booking_value_inr: float = Field(0.0, description="Gross booking value generated in INR")
+
+
 class PartnerDetailResponse(BaseModel):
     """Response contract for GET /api/v1/partners/{id}."""
 
@@ -222,6 +241,14 @@ class PartnerDetailResponse(BaseModel):
         default_factory=PartnerDetailedMetrics,
         description="Comprehensive funnel and conversion metrics",
     )
+    monthly_trends: List[PartnerMonthlyTrendItem] = Field(
+        default_factory=list,
+        description="Chronological monthly funnel trends for 2026",
+    )
+    project_contribution: List[PartnerProjectContributionItem] = Field(
+        default_factory=list,
+        description="Confirmed booking contribution breakdown by project (descending)",
+    )
     recent_leads: List[PartnerRecentLeadItem] = Field(
         default_factory=list,
         description="Recent lead submissions (newest first)",
@@ -232,3 +259,4 @@ class PartnerDetailResponse(BaseModel):
     )
 
     model_config = ConfigDict(from_attributes=True)
+

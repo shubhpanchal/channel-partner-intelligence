@@ -19,6 +19,18 @@ import {
   User,
   Users,
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { usePartnerDetail } from "@/hooks/use-partners";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,7 +88,7 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
     );
   }
 
-  const { metrics, assigned_salesperson } = partner;
+  const { metrics, assigned_salesperson, monthly_trends = [], project_contribution = [] } = partner;
 
   const getTierBadgeVariant = (tier: string) => {
     switch (tier) {
@@ -131,7 +143,7 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
         </div>
       </div>
 
-      {/* Partner Profile Header Card */}
+      {/* 1. Partner Profile Header Card */}
       <Card className="border-slate-200 shadow-xs overflow-hidden bg-white">
         <div className="p-6 sm:p-8">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
@@ -233,7 +245,7 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
         </div>
       </Card>
 
-      {/* 4 Summary Performance Cards */}
+      {/* 2. KPI Summary (4 Performance Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Leads */}
         <Card className="border-slate-200/80 shadow-xs bg-white">
@@ -325,7 +337,7 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
         </Card>
       </div>
 
-      {/* 4-Stage Conversion Funnel Flow */}
+      {/* 3. Funnel Overview (4-Stage Flow) */}
       <Card className="border-slate-200/80 shadow-xs bg-white">
         <CardHeader className="pb-3 border-b border-slate-100">
           <div className="flex items-center justify-between">
@@ -441,9 +453,185 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Conversion Rates Matrix */}
-          <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      {/* 4. Analytics Section (Partner Funnel Trend + Project Booking Contribution) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="partner-analytics-section">
+        {/* Chart 1: Partner Funnel Trend */}
+        <Card className="lg:col-span-2 border-slate-200/80 shadow-xs bg-white" data-testid="chart-partner-funnel-trend">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-sm font-bold text-slate-900">
+                  Partner Funnel Trend
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Monthly progression from partner leads to completed visits and bookings (2026)
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="text-[10px] bg-slate-50">
+                12 Months Logged
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="h-[260px] w-full">
+              {monthly_trends.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                  No monthly trend activity recorded for this partner.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthly_trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="pLeadGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
+                      </linearGradient>
+                      <linearGradient id="pVisitGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
+                      </linearGradient>
+                      <linearGradient id="pBookingGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="month"
+                      tickLine={false}
+                      axisLine={{ stroke: "#e2e8f0" }}
+                      fontSize={11}
+                      tick={{ fill: "#64748b" }}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={{ stroke: "#e2e8f0" }}
+                      fontSize={11}
+                      tick={{ fill: "#64748b" }}
+                      allowDecimals={false}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        borderColor: "#e2e8f0",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                      iconType="circle"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="leads"
+                      name="Valid Leads"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#pLeadGrad)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="completed_visits"
+                      name="Completed Visits"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#pVisitGrad)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="bookings"
+                      name="Confirmed Bookings"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#pBookingGrad)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Chart 2: Project Booking Contribution */}
+        <Card className="border-slate-200/80 shadow-xs bg-white" data-testid="chart-project-contribution">
+          <CardHeader className="pb-2">
+            <div>
+              <CardTitle className="text-sm font-bold text-slate-900">
+                Project Booking Contribution
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Confirmed booking contribution by project for this partner
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="h-[260px] w-full">
+              {project_contribution.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center text-center p-4 text-xs text-slate-400">
+                  <Building2 className="h-6 w-6 text-slate-300 mb-1" />
+                  <span>No confirmed bookings recorded across projects yet.</span>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={project_contribution}
+                    layout="vertical"
+                    margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                    <XAxis
+                      type="number"
+                      allowDecimals={false}
+                      tickLine={false}
+                      axisLine={{ stroke: "#e2e8f0" }}
+                      fontSize={11}
+                      tick={{ fill: "#64748b" }}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="project_name"
+                      tickLine={false}
+                      axisLine={{ stroke: "#e2e8f0" }}
+                      fontSize={11}
+                      tick={{ fill: "#334155" }}
+                      width={110}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "#ffffff",
+                        borderColor: "#e2e8f0",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
+                        fontSize: "12px",
+                      }}
+                      formatter={(val: number) => [`${val} Units`, "Bookings"]}
+                    />
+                    <Bar
+                      dataKey="bookings"
+                      name="Bookings"
+                      fill="#3b82f6"
+                      radius={[0, 4, 4, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 5. Conversion Rates Matrix */}
+      <Card className="border-slate-200/80 shadow-xs bg-white">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60">
               <div className="text-[11px] text-slate-500 font-medium">Qualification Rate</div>
               <div className="text-base font-bold text-slate-900 mt-1">
@@ -478,43 +666,43 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
         </CardContent>
       </Card>
 
-      {/* Recent Leads & Recent Bookings Tables */}
+      {/* 6. Recent Leads & 7. Recent Bookings (Bounded Internal Viewports) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Leads Table */}
-        <Card className="border-slate-200/80 shadow-xs bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
+        {/* Recent Inbound Leads Viewport */}
+        <Card className="border-slate-200/80 shadow-xs bg-white flex flex-col" data-testid="recent-leads-card">
+          <CardHeader className="pb-3 border-b border-slate-100 shrink-0">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-sm font-bold text-slate-900">
                   Recent Inbound Leads
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-500">
-                  Latest 10 prospect submissions (newest first)
+                  Latest prospect submissions (bounded internal viewport)
                 </CardDescription>
               </div>
               <Badge variant="neutral">{partner.recent_leads.length} Records</Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 flex-1">
             {partner.recent_leads.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-500">
                 No recent leads recorded for this partner.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="max-h-[270px] overflow-y-auto">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-xs">
                     <TableRow>
-                      <TableHead className="w-24">Lead Code</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Project</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Date</TableHead>
+                      <TableHead className="w-24 text-[11px]">Lead Code</TableHead>
+                      <TableHead className="text-[11px]">Customer</TableHead>
+                      <TableHead className="text-[11px]">Project</TableHead>
+                      <TableHead className="text-[11px]">Status</TableHead>
+                      <TableHead className="text-right text-[11px]">Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {partner.recent_leads.map((ld) => (
-                      <TableRow key={ld.id}>
+                      <TableRow key={ld.id} className="hover:bg-slate-50/80">
                         <TableCell className="font-mono text-xs font-medium text-slate-700">
                           {ld.lead_code}
                         </TableCell>
@@ -545,41 +733,41 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
           </CardContent>
         </Card>
 
-        {/* Recent Bookings Table */}
-        <Card className="border-slate-200/80 shadow-xs bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
+        {/* Recent Booking Closures Viewport */}
+        <Card className="border-slate-200/80 shadow-xs bg-white flex flex-col" data-testid="recent-bookings-card">
+          <CardHeader className="pb-3 border-b border-slate-100 shrink-0">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-sm font-bold text-slate-900">
                   Recent Booking Closures
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-500">
-                  Latest 10 unit purchase transactions (newest first)
+                  Latest unit purchase transactions (bounded internal viewport)
                 </CardDescription>
               </div>
               <Badge variant="neutral">{partner.recent_bookings.length} Records</Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 flex-1">
             {partner.recent_bookings.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-500">
                 No recent booking transactions recorded for this partner.
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="max-h-[270px] overflow-y-auto">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-xs">
                     <TableRow>
-                      <TableHead className="w-24">Booking Ref</TableHead>
-                      <TableHead>Customer / Unit</TableHead>
-                      <TableHead>Project</TableHead>
-                      <TableHead className="text-right">Value</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="w-24 text-[11px]">Booking Ref</TableHead>
+                      <TableHead className="text-[11px]">Customer / Unit</TableHead>
+                      <TableHead className="text-[11px]">Project</TableHead>
+                      <TableHead className="text-right text-[11px]">Value</TableHead>
+                      <TableHead className="text-[11px]">Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {partner.recent_bookings.map((bk) => (
-                      <TableRow key={bk.id}>
+                      <TableRow key={bk.id} className="hover:bg-slate-50/80">
                         <TableCell className="font-mono text-xs font-medium text-slate-700">
                           {bk.booking_reference}
                         </TableCell>
@@ -587,7 +775,7 @@ export function PartnerDetailView({ partnerId, onBack }: PartnerDetailViewProps)
                           <div className="font-medium text-xs text-slate-900">
                             {bk.customer_name}
                           </div>
-                          <div className="text-[11px] text-slate-500">
+                          <div className="text-[11px] text-slate-500 truncate max-w-[140px]">
                             Unit {bk.unit_number} ({bk.unit_type})
                           </div>
                         </TableCell>

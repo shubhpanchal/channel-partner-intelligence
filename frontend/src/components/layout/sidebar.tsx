@@ -70,7 +70,7 @@ export function Sidebar({ activeKey, onSelect, isOpen, onClose }: SidebarProps) 
       <aside
         data-testid="app-sidebar"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 lg:h-screen lg:shrink-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

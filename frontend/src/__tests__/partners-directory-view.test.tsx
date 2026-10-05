@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { PartnersDirectoryView } from "@/components/partners/partners-directory-view";
 import * as partnersHook from "@/hooks/use-partners";
+import * as overviewHook from "@/hooks/use-overview-summary";
 import { PartnerListResponse } from "@/lib/api/partners";
 
 const MOCK_LIST_DATA: PartnerListResponse = {
@@ -66,6 +67,22 @@ const MOCK_LIST_DATA: PartnerListResponse = {
 describe("PartnersDirectoryView Component", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(overviewHook, "useOverviewSummary").mockReturnValue({
+      data: {
+        kpis: {
+          active_partners: { value: 172, growth_pct: 0, breakdown: { tier_1: 18, tier_2: 44, tier_3: 110 } },
+        },
+        partner_tier_distribution: [
+          { tier: "Tier 1 (Elite)", partners_count: 18, percentage: 10.3, contribution: "10.3%" },
+          { tier: "Tier 2 (Growth)", partners_count: 45, percentage: 25.7, contribution: "25.7%" },
+          { tier: "Tier 3 (Active)", partners_count: 112, percentage: 64.0, contribution: "64.0%" },
+        ],
+      } as any,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
   });
 
   it("renders loading skeleton state when loading", () => {
@@ -117,7 +134,7 @@ describe("PartnersDirectoryView Component", () => {
     expect(screen.getByText("No partners match these filters")).toBeInTheDocument();
   });
 
-  it("renders partners directory table with formatted stats", () => {
+  it("renders portfolio summary bar and cards view by default", () => {
     vi.spyOn(partnersHook, "usePartners").mockReturnValue({
       data: MOCK_LIST_DATA,
       isLoading: false,
@@ -128,12 +145,47 @@ describe("PartnersDirectoryView Component", () => {
 
     render(<PartnersDirectoryView />);
 
+    expect(screen.getByTestId("portfolio-summary-bar")).toBeInTheDocument();
+    expect(screen.getByTestId("summary-total-partners")).toBeInTheDocument();
+    expect(screen.getByTestId("summary-active-partners")).toBeInTheDocument();
+
+    // Default view is cards grid
+    expect(screen.getByTestId("partners-cards-grid")).toBeInTheDocument();
+    expect(screen.getByTestId("partner-card-cp-1001")).toBeInTheDocument();
+    expect(screen.getByTestId("partner-card-cp-1002")).toBeInTheDocument();
     expect(screen.getAllByText("Apex Realty").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("CP-1001").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Bluechip Properties").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("CP-1002").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Total Partners: 175")).toBeInTheDocument();
     expect(screen.getByText("Page 1 of 9")).toBeInTheDocument();
+  });
+
+  it("toggles between Cards and List view modes", () => {
+    vi.spyOn(partnersHook, "usePartners").mockReturnValue({
+      data: MOCK_LIST_DATA,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    render(<PartnersDirectoryView />);
+
+    // Initially cards view
+    expect(screen.getByTestId("partners-cards-grid")).toBeInTheDocument();
+    expect(screen.queryByTestId("partners-table-card")).not.toBeInTheDocument();
+
+    // Switch to List view
+    const listBtn = screen.getByTestId("view-mode-list-btn");
+    fireEvent.click(listBtn);
+
+    expect(screen.getByTestId("partners-table-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("partners-cards-grid")).not.toBeInTheDocument();
+
+    // Switch back to Cards view
+    const cardsBtn = screen.getByTestId("view-mode-cards-btn");
+    fireEvent.click(cardsBtn);
+
+    expect(screen.getByTestId("partners-cards-grid")).toBeInTheDocument();
+    expect(screen.queryByTestId("partners-table-card")).not.toBeInTheDocument();
   });
 
   it("triggers filter changes and debounces search input", async () => {
@@ -194,7 +246,7 @@ describe("PartnersDirectoryView Component", () => {
     expect(tierSelect).toHaveValue("");
   });
 
-  it("opens PartnerDetailView when a partner row is clicked", () => {
+  it("opens PartnerDetailView when a partner card is clicked", () => {
     vi.spyOn(partnersHook, "usePartners").mockReturnValue({
       data: MOCK_LIST_DATA,
       isLoading: false,
@@ -231,6 +283,8 @@ describe("PartnersDirectoryView Component", () => {
           overall_conversion_rate_pct: 16.0,
           gross_booking_value_inr: 85000000.0,
         },
+        monthly_trends: [],
+        project_contribution: [],
         recent_leads: [],
         recent_bookings: [],
       },
@@ -242,8 +296,8 @@ describe("PartnersDirectoryView Component", () => {
 
     render(<PartnersDirectoryView />);
 
-    const row = screen.getByTestId("partner-row-cp-1001");
-    fireEvent.click(row);
+    const card = screen.getByTestId("partner-card-cp-1001");
+    fireEvent.click(card);
 
     // Should now show partner detail view
     expect(screen.getByTestId("back-to-directory-btn")).toBeInTheDocument();
@@ -254,5 +308,88 @@ describe("PartnersDirectoryView Component", () => {
     fireEvent.click(backBtn);
 
     expect(screen.getByTestId("partners-search-input")).toBeInTheDocument();
+  });
+
+  it("handles pagination next and previous button clicks", () => {
+    const usePartnersSpy = vi.spyOn(partnersHook, "usePartners").mockReturnValue({
+      data: {
+        ...MOCK_LIST_DATA,
+        pagination: { total: 175, page: 2, page_size: 20, total_pages: 9 },
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    render(<PartnersDirectoryView />);
+
+    const prevBtn = screen.getByTestId("pagination-prev-btn");
+    fireEvent.click(prevBtn);
+
+    const nextBtn = screen.getByTestId("pagination-next-btn");
+    fireEvent.click(nextBtn);
+
+    expect(usePartnersSpy).toHaveBeenCalled();
+  });
+
+  it("opens PartnerDetailView from list mode table row", () => {
+    vi.spyOn(partnersHook, "usePartners").mockReturnValue({
+      data: MOCK_LIST_DATA,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    vi.spyOn(partnersHook, "usePartnerDetail").mockReturnValue({
+      data: {
+        id: "cp-1001",
+        partner_code: "CP-1001",
+        name: "Apex Realty",
+        contact_person: "Vikram Malhotra",
+        phone: "+91 98200 11111",
+        email: "vikram@apexrealty.com",
+        city: "Pune",
+        location: "Baner",
+        onboarding_date: "2026-01-10",
+        active: true,
+        tier: "Tier 1",
+        channel_type: "Corporate Agency",
+        metrics: {
+          total_leads: 50,
+          qualified_leads: 35,
+          qualification_rate_pct: 70.0,
+          scheduled_site_visits: 30,
+          completed_site_visits: 25,
+          visit_completion_rate_pct: 83.33,
+          unique_visited_leads: 20,
+          qualified_lead_to_visit_rate_pct: 57.14,
+          confirmed_bookings: 8,
+          visit_to_booking_rate_pct: 40.0,
+          overall_conversion_rate_pct: 16.0,
+          gross_booking_value_inr: 85000000.0,
+        },
+        monthly_trends: [],
+        project_contribution: [],
+        recent_leads: [],
+        recent_bookings: [],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    render(<PartnersDirectoryView />);
+
+    // Switch to List view
+    const listBtn = screen.getByTestId("view-mode-list-btn");
+    fireEvent.click(listBtn);
+
+    const row = screen.getByTestId("partner-row-cp-1001");
+    fireEvent.click(row);
+
+    expect(screen.getByTestId("back-to-directory-btn")).toBeInTheDocument();
   });
 });

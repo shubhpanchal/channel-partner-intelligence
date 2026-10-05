@@ -53,7 +53,7 @@ export function AppShell() {
   const currentSection = SECTION_TITLES[activeKey] || SECTION_TITLES.overview;
 
   return (
-    <div className="flex min-h-screen bg-slate-50/60 font-sans antialiased text-slate-900">
+    <div className="flex h-screen bg-slate-50/60 font-sans antialiased text-slate-900 overflow-hidden">
       {/* Sidebar Navigation */}
       <Sidebar
         activeKey={activeKey}

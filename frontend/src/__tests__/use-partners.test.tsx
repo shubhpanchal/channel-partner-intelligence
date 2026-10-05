@@ -77,6 +77,8 @@ const MOCK_DETAIL_RESPONSE: partnersApi.PartnerDetailResponse = {
     overall_conversion_rate_pct: 16.0,
     gross_booking_value_inr: 85000000.0,
   },
+  monthly_trends: [],
+  project_contribution: [],
   recent_leads: [],
   recent_bookings: [],
 };

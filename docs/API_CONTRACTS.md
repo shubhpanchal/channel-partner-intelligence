@@ -228,6 +228,32 @@ Retrieves detailed profile, assigned sales manager, and comprehensive performanc
     "overall_conversion_rate_pct": 11.18,
     "gross_booking_value_inr": 385000000.00
   },
+  "monthly_trends": [
+    {
+      "month": "Jan",
+      "leads": 28,
+      "completed_visits": 12,
+      "bookings": 3
+    },
+    {
+      "month": "Feb",
+      "leads": 25,
+      "completed_visits": 10,
+      "bookings": 2
+    }
+  ],
+  "project_contribution": [
+    {
+      "project_id": "prj-101",
+      "project_name": "Solaris Residences",
+      "bookings": 18
+    },
+    {
+      "project_id": "prj-102",
+      "project_name": "Urban Oasis",
+      "bookings": 12
+    }
+  ],
   "recent_leads": [],
   "recent_bookings": []
 }

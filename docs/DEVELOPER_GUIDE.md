@@ -86,26 +86,54 @@ OverviewSummaryResponse (Pydantic v2 Schema in backend/app/schemas/overview.py)
 
 ---
 
-## 4. Partners API & Directory Architecture (Phase 2C-2)
+## 4. Partners API, Directory & Analytics Architecture (Phase 2C-2)
 
 ### 4.1 Service & Aggregation Approach (Zero N+1)
-To prevent N+1 query degradation when rendering 20 to 100 partners per page, `PartnerService` executes a batched grouped aggregation strategy:
+To prevent N+1 query degradation when rendering 20 to 100 partners per page or drilling down into individual partner performance, `PartnerService` executes a batched grouped aggregation strategy:
 1. **Paginated Entities**: Selects the matching page of `ChannelPartner` entities with eager joined loading of `assigned_salesperson`.
 2. **Batch Lead Statistics**: Aggregates `total_leads`, `valid_leads` (`status != 'Invalid'`), and `qualified_leads` (`qualified_at IS NOT NULL`) in a single query grouped by `channel_partner_id`.
 3. **Batch Site Visit Statistics**: Groups completed site visits and unique visited lead IDs across all page partner IDs.
 4. **Direct Booking Isolation**: Fetches confirmed/completed booking lead IDs and evaluates them against the partner's unique visited lead set in memory, ensuring that direct bookings without site visits do not artificially inflate `visit_to_booking_rate_pct`.
 5. **Memory Synthesis**: Merges database aggregates in O(N) linear time, ensuring exactly 4 database queries per paginated request regardless of page size.
 
-### 4.2 Multi-Field Search & Stable Sorting
+### 4.2 Partner Analytics Aggregation (Funnel Trends & Project Contribution)
+When retrieving partner detail (`GET /api/v1/partners/{id}`), `PartnerService` performs partner-isolated database aggregations for real-time visual charts:
+- **Monthly Funnel Trends (`monthly_trends`)**: Computes 12-month chronological progression across 2026 (Jan–Dec) by grouping:
+  - Valid Inbound Leads (`Lead.status != 'Invalid'`) by month of `created_at`.
+  - Completed Site Visits (`SiteVisit.status == 'Completed'`) by month of `visited_at`.
+  - Confirmed Bookings (`Booking.booking_status IN ('Confirmed', 'Completed')`) by month of `booking_date`.
+- **Project Booking Contribution (`project_contribution`)**: Joins `Booking` with `Project`, filtering by partner ID and confirmed/completed statuses, grouping by project and ordering descending by booking count. Projects with zero bookings for that partner are cleanly omitted.
+
+### 4.3 Multi-Field Search & Stable Sorting
 - **Multi-Field Partial Search**: Matches across `name`, `contact_person`, and `partner_code` using case-insensitive SQL `LIKE` queries.
 - **Deterministic Sort Ordering**: Ties in `name`, `onboarding_date`, and `tier` sort orders are broken using secondary deterministic columns (`id` / `partner_code`), preventing unstable pagination drift across page transitions.
 
-### 4.3 Frontend TanStack Query Integration
+### 4.4 Sticky Sidebar & Responsive Layout Architecture
+To ensure enterprise ergonomics across large screens while preserving mobile drawer agility:
+- **Root Viewport Pinning**: `AppShell` defines `flex h-screen overflow-hidden bg-background text-foreground`, ensuring that the outer page boundary never scrolls.
+- **Fixed Desktop Sidebar**: `Sidebar` is styled with `lg:h-screen lg:shrink-0` to remain permanently fixed and accessible during long vertical scrolls.
+- **Independent Content Scrolling**: The main content wrapper `<main className="flex-1 overflow-y-auto min-w-0">` maintains independent vertical scrollability.
+- **Mobile Drawer Agility**: Preserves the slide-out sheet drawer (`aria-label="Open sidebar"`) triggered by the mobile hamburger menu without horizontal overflow.
+
+### 4.5 Bounded Activity Viewport Pattern
+To prevent data-heavy lists from bloating page height and causing horizontal overflow:
+- **Internal Viewport Height**: Recent Inbound Leads and Recent Booking Closures use bounded containers (`max-h-[270px] overflow-y-auto`).
+- **Sticky Table Headers**: Table headers are configured with `sticky top-0 bg-slate-50 z-10 shadow-xs` to keep column context visible during internal scrolling.
+- **Compact Desktop Columns**: High-priority fields (Booking Ref, Customer / Unit, Project, Value, Status) are styled to fit seamlessly within card boundaries without horizontal scrollbars.
+- **Mobile Responsive Presentation**: On mobile viewports (<640px), compact stacked badges and truncated identifiers ensure zero page-level horizontal overflow.
+
+### 4.6 Cards vs List Portfolio Architecture
+- **Cards View (Default)**: Renders a 3-column desktop / 2-column tablet / 1-column mobile portfolio grid optimized for rapid executive scanning (Identity, Tier badge, Active status, Assigned Manager, Leads/Visits/Bookings chips, and conversion percentages).
+- **List View**: Dense operational table for bulk sorting and comparative analysis.
+- **Portfolio Summary Strip**: Integrates live network-wide metrics (Total Partners, Trailing 90-Day Active Partners, Tier 1/2/3 breakdown) fetched seamlessly via `useOverviewSummary()`.
+- **API Pagination**: Pagination (`page`, `page_size`) operates at the server level for both Cards and List views.
+
+### 4.7 Frontend TanStack Query Integration
 - **API Client**: `frontend/src/lib/api/partners.ts` provides typed `fetchPartners(filters)` and `fetchPartnerById(id)`.
 - **Query Hooks**: `frontend/src/hooks/use-partners.ts` provides `usePartners(filters)` and `usePartnerDetail(partnerId)` with automated query key caching and 60-second background freshness.
 - **UI Components**:
-  - `PartnersDirectoryView`: Top controls (debounced search, tier/status/city dropdowns, sorting), responsive desktop table, accessible mobile card deck, and pagination controls.
-  - `PartnerDetailView`: Partner header with relationship manager card, 4 performance summary cards, 4-stage funnel visualization with stage-to-stage conversion rates, recent leads table (newest 10), and recent bookings table (newest 10).
+  - `PartnersDirectoryView`: Top controls (debounced search, tier/status/city dropdowns, sorting), view switcher (`Cards | List`), Portfolio summary strip, cards grid, dense operational table, and pagination controls.
+  - `PartnerDetailView`: Partner header with relationship manager card, 4 performance summary cards, 4-stage funnel flow, Recharts monthly funnel trend and project contribution charts, conversion rates matrix, and bounded viewports for recent leads and bookings.
 
 ---
 

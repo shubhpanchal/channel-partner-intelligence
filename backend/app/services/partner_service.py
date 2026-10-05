@@ -15,13 +15,15 @@ from app.core.domain_semantics import (
     calculate_visit_completion_rate,
     calculate_visit_to_booking_rate,
 )
-from app.models.entities import Booking, ChannelPartner, Lead, SiteVisit
+from app.models.entities import Booking, ChannelPartner, Lead, Project, SiteVisit
 from app.schemas.partners import (
     PaginationMetadata,
     PartnerDetailedMetrics,
     PartnerDetailResponse,
     PartnerListItem,
     PartnerListResponse,
+    PartnerMonthlyTrendItem,
+    PartnerProjectContributionItem,
     PartnerRecentBookingItem,
     PartnerRecentLeadItem,
     PartnerSummaryStats,
@@ -341,7 +343,104 @@ def get_partner_by_id(db: Session, partner_id: str) -> PartnerDetailResponse:
         gross_booking_value_inr=gross_booking_value_inr,
     )
 
-    # 4. Recent Leads (limit 10, newest first)
+    # 4. Monthly Funnel Progression Trends (2026 Timeline, 12 Months)
+    MONTH_NAMES = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ]
+
+    # 4a. Monthly Valid Leads
+    monthly_leads_rows = db.execute(
+        select(
+            func.strftime("%m", Lead.created_at).label("month_str"),
+            func.count(Lead.id).label("leads_count"),
+        )
+        .where(
+            Lead.channel_partner_id == partner.id,
+            Lead.status != "Invalid",
+        )
+        .group_by("month_str")
+    ).all()
+    monthly_leads_map: Dict[int, int] = {
+        int(row.month_str): (row.leads_count or 0) for row in monthly_leads_rows if row.month_str
+    }
+
+    # 4b. Monthly Completed Site Visits
+    monthly_visits_rows = db.execute(
+        select(
+            func.strftime(
+                "%m",
+                func.coalesce(SiteVisit.visited_at, SiteVisit.scheduled_at, SiteVisit.created_at),
+            ).label("month_str"),
+            func.count(SiteVisit.id).label("visits_count"),
+        )
+        .where(
+            SiteVisit.channel_partner_id == partner.id,
+            SiteVisit.status == "Completed",
+        )
+        .group_by("month_str")
+    ).all()
+    monthly_visits_map: Dict[int, int] = {
+        int(row.month_str): (row.visits_count or 0) for row in monthly_visits_rows if row.month_str
+    }
+
+    # 4c. Monthly Confirmed / Completed Bookings
+    monthly_bookings_rows = db.execute(
+        select(
+            func.strftime("%m", Booking.booking_date).label("month_str"),
+            func.count(Booking.id).label("bookings_count"),
+        )
+        .where(
+            Booking.channel_partner_id == partner.id,
+            Booking.booking_status.in_(["Confirmed", "Completed"]),
+        )
+        .group_by("month_str")
+    ).all()
+    monthly_bookings_map: Dict[int, int] = {
+        int(row.month_str): (row.bookings_count or 0)
+        for row in monthly_bookings_rows
+        if row.month_str
+    }
+
+    monthly_trends = [
+        PartnerMonthlyTrendItem(
+            month=MONTH_NAMES[m - 1],
+            month_num=m,
+            leads=monthly_leads_map.get(m, 0),
+            completed_visits=monthly_visits_map.get(m, 0),
+            bookings=monthly_bookings_map.get(m, 0),
+        )
+        for m in range(1, 13)
+    ]
+
+    # 5. Project Booking Contribution (Descending by bookings count)
+    project_contribution_rows = db.execute(
+        select(
+            Project.id.label("project_id"),
+            Project.name.label("project_name"),
+            func.count(Booking.id).label("bookings_count"),
+            func.sum(Booking.booking_value).label("total_booking_value"),
+        )
+        .join(Booking, Booking.project_id == Project.id)
+        .where(
+            Booking.channel_partner_id == partner.id,
+            Booking.booking_status.in_(["Confirmed", "Completed"]),
+        )
+        .group_by(Project.id, Project.name)
+        .order_by(func.count(Booking.id).desc(), Project.name.asc())
+    ).all()
+
+    project_contribution = [
+        PartnerProjectContributionItem(
+            project_id=row.project_id,
+            project_name=row.project_name,
+            bookings=row.bookings_count or 0,
+            booking_value_inr=float(row.total_booking_value or 0.0),
+        )
+        for row in project_contribution_rows
+    ]
+
+    # 6. Recent Leads (limit 10, newest first)
     recent_leads_records = db.scalars(
         select(Lead)
         .options(joinedload(Lead.project))
@@ -368,7 +467,7 @@ def get_partner_by_id(db: Session, partner_id: str) -> PartnerDetailResponse:
         for ld in recent_leads_records
     ]
 
-    # 5. Recent Bookings (limit 10, newest first)
+    # 7. Recent Bookings (limit 10, newest first)
     recent_bookings_records = db.scalars(
         select(Booking)
         .options(
@@ -403,7 +502,7 @@ def get_partner_by_id(db: Session, partner_id: str) -> PartnerDetailResponse:
         for bk in recent_bookings_records
     ]
 
-    # 6. Assigned Salesperson Details
+    # 8. Assigned Salesperson Details
     salesperson_detail = None
     if partner.assigned_salesperson:
         salesperson_detail = SalespersonDetail(
@@ -430,6 +529,8 @@ def get_partner_by_id(db: Session, partner_id: str) -> PartnerDetailResponse:
         notes=partner.notes,
         assigned_salesperson=salesperson_detail,
         metrics=metrics,
+        monthly_trends=monthly_trends,
+        project_contribution=project_contribution,
         recent_leads=recent_leads,
         recent_bookings=recent_bookings,
     )

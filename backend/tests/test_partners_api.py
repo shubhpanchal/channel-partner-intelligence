@@ -299,6 +299,35 @@ def test_get_partner_detail_success(seeded_client: TestClient):
     assert "overall_conversion_rate_pct" in metrics
     assert "gross_booking_value_inr" in metrics
 
+    # Verify monthly trends
+    assert "monthly_trends" in data
+    assert len(data["monthly_trends"]) == 12
+    months_expected = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ]
+    assert [m["month"] for m in data["monthly_trends"]] == months_expected
+    for m in data["monthly_trends"]:
+        assert "leads" in m
+        assert "completed_visits" in m
+        assert "bookings" in m
+        assert m["leads"] >= 0
+        assert m["completed_visits"] >= 0
+        assert m["bookings"] >= 0
+
+    # Verify project contribution
+    assert "project_contribution" in data
+    assert isinstance(data["project_contribution"], list)
+    if data["project_contribution"]:
+        # Verify descending order by bookings
+        bookings_counts = [pc["bookings"] for pc in data["project_contribution"]]
+        assert bookings_counts == sorted(bookings_counts, reverse=True)
+        pc_0 = data["project_contribution"][0]
+        assert "project_id" in pc_0
+        assert "project_name" in pc_0
+        assert "bookings" in pc_0
+        assert "booking_value_inr" in pc_0
+
     # Verify recent leads list
     assert "recent_leads" in data
     assert len(data["recent_leads"]) <= 10
@@ -320,6 +349,199 @@ def test_get_partner_detail_success(seeded_client: TestClient):
         assert "project_name" in bk_0
         assert "booking_value" in bk_0
         assert "created_at" in bk_0
+
+
+def test_get_partner_detail_analytics_isolated(fresh_session: Session):
+    """Test monthly trends and project contribution analytics aggregation in isolated scenario."""
+    from app.models.entities import Project
+    from app.services.partner_service import get_partner_by_id
+
+    salesperson = Salesperson(
+        id="sp-analytics-1",
+        name="Sales Lead",
+        email="lead@sales.com",
+        phone="+91 99999 11111",
+        active=True,
+    )
+    partner = ChannelPartner(
+        id="cp-analytics-1",
+        partner_code="CP-ANL-1",
+        name="Analytics Realty",
+        contact_person="Anita Rao",
+        phone="+91 99999 22222",
+        email="anita@analytics.com",
+        city="Pune",
+        location="Kalyani Nagar",
+        onboarding_date=date(2026, 1, 1),
+        active=True,
+        tier="Tier 1",
+        channel_type="Corporate Agency",
+        assigned_salesperson_id=salesperson.id,
+    )
+    p1 = Project(
+        id="prj-anl-1",
+        name="Alpha Heights",
+        project_code="ALPHA",
+        city="Pune",
+        location="Kalyani Nagar",
+        project_type="Residential",
+        target_units=100,
+        available_units=50,
+        starting_price=10000000.0,
+    )
+    p2 = Project(
+        id="prj-anl-2",
+        name="Beta Enclave",
+        project_code="BETA",
+        city="Pune",
+        location="Baner",
+        project_type="Residential",
+        target_units=100,
+        available_units=50,
+        starting_price=15000000.0,
+    )
+    fresh_session.add_all([salesperson, partner, p1, p2])
+    fresh_session.flush()
+
+    # Jan: 2 leads (1 valid, 1 invalid) -> monthly trend leads should be 1
+    l_valid = Lead(
+        id="lead-jan-1",
+        lead_code="LD-JAN-1",
+        customer_name="Jan Valid",
+        customer_phone="+91 91111 00001",
+        channel_partner_id=partner.id,
+        project_id=p1.id,
+        status=LeadStatus.QUALIFIED.value,
+        created_at=datetime(2026, 1, 10, 10, 0),
+    )
+    l_invalid = Lead(
+        id="lead-jan-2",
+        lead_code="LD-JAN-2",
+        customer_name="Jan Invalid",
+        customer_phone="+91 91111 00002",
+        channel_partner_id=partner.id,
+        project_id=p1.id,
+        status=LeadStatus.INVALID.value,
+        created_at=datetime(2026, 1, 12, 10, 0),
+    )
+    # Feb: 1 completed visit, 1 scheduled visit -> monthly trend completed_visits should be 1
+    l_feb = Lead(
+        id="lead-feb-1",
+        lead_code="LD-FEB-1",
+        customer_name="Feb Client",
+        customer_phone="+91 91111 00003",
+        channel_partner_id=partner.id,
+        project_id=p2.id,
+        status=LeadStatus.SITE_VISIT_COMPLETED.value,
+        created_at=datetime(2026, 2, 5, 10, 0),
+    )
+    v_completed = SiteVisit(
+        id="vis-feb-1",
+        visit_code="SV-FEB-1",
+        lead_id=l_feb.id,
+        channel_partner_id=partner.id,
+        project_id=p2.id,
+        status=SiteVisitStatus.COMPLETED.value,
+        scheduled_at=datetime(2026, 2, 10, 11, 0),
+        visited_at=datetime(2026, 2, 10, 11, 0),
+    )
+    v_scheduled = SiteVisit(
+        id="vis-feb-2",
+        visit_code="SV-FEB-2",
+        lead_id=l_valid.id,
+        channel_partner_id=partner.id,
+        project_id=p1.id,
+        status=SiteVisitStatus.SCHEDULED.value,
+        scheduled_at=datetime(2026, 2, 12, 11, 0),
+    )
+    # Mar: 2 Bookings for p1, 1 Booking for p2
+    bk1 = Booking(
+        id="bk-p1-1",
+        booking_reference="BK-P1-1",
+        lead_id=l_valid.id,
+        project_id=p1.id,
+        channel_partner_id=partner.id,
+        salesperson_id=salesperson.id,
+        unit_number="101",
+        unit_type="3BHK",
+        booking_date=date(2026, 3, 15),
+        booking_status=BookingStatus.CONFIRMED.value,
+        booking_value=12000000.0,
+        token_amount=500000.0,
+        commission_rate_pct=2.0,
+        commission_amount=240000.0,
+        created_at=datetime(2026, 3, 15, 12, 0),
+    )
+    bk2 = Booking(
+        id="bk-p1-2",
+        booking_reference="BK-P1-2",
+        lead_id=l_feb.id,
+        project_id=p1.id,
+        channel_partner_id=partner.id,
+        salesperson_id=salesperson.id,
+        unit_number="102",
+        unit_type="3BHK",
+        booking_date=date(2026, 3, 20),
+        booking_status=BookingStatus.COMPLETED.value,
+        booking_value=13000000.0,
+        token_amount=500000.0,
+        commission_rate_pct=2.0,
+        commission_amount=260000.0,
+        created_at=datetime(2026, 3, 20, 12, 0),
+    )
+    bk3 = Booking(
+        id="bk-p2-1",
+        booking_reference="BK-P2-1",
+        lead_id=l_feb.id,
+        project_id=p2.id,
+        channel_partner_id=partner.id,
+        salesperson_id=salesperson.id,
+        unit_number="201",
+        unit_type="2BHK",
+        booking_date=date(2026, 3, 22),
+        booking_status=BookingStatus.CONFIRMED.value,
+        booking_value=9000000.0,
+        token_amount=500000.0,
+        commission_rate_pct=2.0,
+        commission_amount=180000.0,
+        created_at=datetime(2026, 3, 22, 12, 0),
+    )
+    fresh_session.add_all([l_valid, l_invalid, l_feb, v_completed, v_scheduled, bk1, bk2, bk3])
+    fresh_session.commit()
+
+    detail = get_partner_by_id(fresh_session, partner.id)
+    assert len(detail.monthly_trends) == 12
+
+    # Jan trend: 1 valid lead, 0 visits, 0 bookings
+    jan_trend = detail.monthly_trends[0]
+    assert jan_trend.month == "Jan"
+    assert jan_trend.leads == 1
+    assert jan_trend.completed_visits == 0
+    assert jan_trend.bookings == 0
+
+    # Feb trend: 1 valid lead, 1 completed visit, 0 bookings
+    feb_trend = detail.monthly_trends[1]
+    assert feb_trend.month == "Feb"
+    assert feb_trend.leads == 1
+    assert feb_trend.completed_visits == 1
+    assert feb_trend.bookings == 0
+
+    # Mar trend: 0 leads, 0 visits, 3 bookings
+    mar_trend = detail.monthly_trends[2]
+    assert mar_trend.month == "Mar"
+    assert mar_trend.leads == 0
+    assert mar_trend.completed_visits == 0
+    assert mar_trend.bookings == 3
+
+    # Project contribution: p1 (2 bookings, 25M value), p2 (1 booking, 9M value)
+    assert len(detail.project_contribution) == 2
+    assert detail.project_contribution[0].project_name == "Alpha Heights"
+    assert detail.project_contribution[0].bookings == 2
+    assert detail.project_contribution[0].booking_value_inr == 25000000.0
+
+    assert detail.project_contribution[1].project_name == "Beta Enclave"
+    assert detail.project_contribution[1].bookings == 1
+    assert detail.project_contribution[1].booking_value_inr == 9000000.0
 
 
 def test_get_partner_detail_not_found(seeded_client: TestClient):

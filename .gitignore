@@ -58,6 +58,8 @@ frontend/out/
 coverage/
 frontend/coverage/
 .turbo
+*.tsbuildinfo
+frontend/*.tsbuildinfo
 
 # Testing & Logs
 logs/

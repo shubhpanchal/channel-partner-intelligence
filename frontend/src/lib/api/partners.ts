@@ -102,6 +102,21 @@ export interface PartnerRecentBookingItem {
   created_at: string;
 }
 
+export interface PartnerMonthlyTrendItem {
+  month: string;
+  month_num: number;
+  leads: number;
+  completed_visits: number;
+  bookings: number;
+}
+
+export interface PartnerProjectContributionItem {
+  project_id: string;
+  project_name: string;
+  bookings: number;
+  booking_value_inr: number;
+}
+
 export interface PartnerDetailResponse {
   id: string;
   partner_code: string;
@@ -119,6 +134,8 @@ export interface PartnerDetailResponse {
   notes?: string | null;
   assigned_salesperson?: SalespersonDetail | null;
   metrics: PartnerDetailedMetrics;
+  monthly_trends: PartnerMonthlyTrendItem[];
+  project_contribution: PartnerProjectContributionItem[];
   recent_leads: PartnerRecentLeadItem[];
   recent_bookings: PartnerRecentBookingItem[];
 }
