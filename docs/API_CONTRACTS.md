@@ -1,7 +1,7 @@
 # API Contracts Specification (Phase 2C Blueprint)
 
 **Project**: Channel Partner Intelligence  
-**Document Version**: 2.0.0 (Phase 2A)  
+**Document Version**: 2.1.0 (Phase 2A Semantics Correction)  
 **Status**: Contract Drafted for Phase 2C Implementation  
 
 ---
@@ -11,7 +11,7 @@
 - **Base URL**: `/api/v1`
 - **Content-Type**: `application/json`
 - **Date/Time Format**: ISO-8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
-- **Pagination**: Zero-indexed or 1-indexed query parameters (`page` default 1, `page_size` default 20, max 100).
+- **Pagination**: 1-indexed query parameters (`page` default 1, `page_size` default 20, max 100).
 - **Error Response Structure**:
 ```json
 {
@@ -56,16 +56,20 @@ Retrieves consolidated executive indicators, velocity trends, partner tier distr
       "qualified_leads": 2840,
       "qualification_rate_pct": 73.58
     },
-    "visit_conversion": {
-      "value_pct": 48.5,
-      "growth_pct": 4.1,
+    "site_visits": {
       "total_scheduled": 2240,
-      "total_completed": 1872
+      "total_completed": 1872,
+      "visit_completion_rate_pct": 83.57,
+      "unique_visited_leads": 1377,
+      "qualified_lead_to_visit_rate_pct": 48.49,
+      "growth_pct": 4.1
     },
     "bookings_velocity": {
       "units_count": 446,
       "growth_pct": 23.0,
-      "total_value_inr": 4250000000.00
+      "total_value_inr": 4250000000.00,
+      "visit_to_booking_rate_pct": 32.39,
+      "overall_conversion_rate_pct": 11.55
     }
   },
   "tier_breakdown": [
@@ -186,9 +190,11 @@ Lists registered channel partners with pagination, tier filters, status filters,
       },
       "summary_stats": {
         "total_leads": 340,
+        "qualified_leads": 280,
         "completed_visits": 142,
         "confirmed_bookings": 38,
-        "conversion_rate_pct": 26.76
+        "visit_to_booking_rate_pct": 26.76,
+        "overall_conversion_rate_pct": 11.18
       }
     }
   ],
@@ -230,10 +236,14 @@ Retrieves detailed profile, assigned sales manager, and comprehensive performanc
     "total_leads": 340,
     "qualified_leads": 280,
     "qualification_rate_pct": 82.35,
+    "scheduled_site_visits": 170,
     "completed_site_visits": 142,
-    "visit_conversion_pct": 50.71,
+    "visit_completion_rate_pct": 83.53,
+    "unique_visited_leads": 142,
+    "qualified_lead_to_visit_rate_pct": 50.71,
     "confirmed_bookings": 38,
-    "booking_conversion_pct": 26.76,
+    "visit_to_booking_rate_pct": 26.76,
+    "overall_conversion_rate_pct": 11.18,
     "gross_booking_value_inr": 385000000.00
   },
   "recent_leads": [],
@@ -305,7 +315,7 @@ Lists inbound channel partner leads with multi-factor filters.
       "id": "ld-842",
       "lead_code": "LD-2026-0842",
       "customer_name": "Ananya Sharma",
-      "customer_phone": "+9198231***** ",
+      "customer_phone": "+9198231*****",
       "customer_email": "a.sharma@example.com",
       "project": {
         "id": "prj-101",
@@ -391,6 +401,10 @@ Lists executed bookings and unit closure transactions.
   - `channel_partner_id`
   - `booking_status` (`Initiated`, `Confirmed`, `Cancelled`, `Completed`)
   - `start_date`, `end_date`
+- **Cardinality & Status Rule**:
+  - `Lead 1 -> 0..* Booking Records` (multiple historical records permitted; at most 1 active booking in `Initiated`, `Confirmed`, or `Completed` at any given time).
+- **Synthetic Data Disclaimer**:
+  - `commission_rate_pct` (2.0%) and `commission_amount` are demo sample values and do NOT represent Hariwishwa's actual commission policy.
 - **Success Response (`200 OK`)**:
 ```json
 {

@@ -1,7 +1,7 @@
 # Business Domain, Data Model & KPI Specification
 
 **Project**: Channel Partner Intelligence  
-**Document Version**: 2.0.0 (Phase 2A)  
+**Document Version**: 2.1.0 (Phase 2A Semantics Correction)  
 **Status**: Specification Approved  
 
 ---
@@ -52,7 +52,7 @@ Unlike a transactional customer relationship management (CRM) tool that focuses 
          │ 0..*                             │ 0..*                            │ 0..*
          ▼                                  ▼                                 ▼
 ┌──────────────────┐               ┌─────────────────┐               ┌─────────────────┐
-│ Partner Activity │               │   Site Visit    │               │     Booking     │
+│ Partner Activity │               │   Site Visit    │               │ Booking Record  │
 └──────────────────┘               └────────┬────────┘               └─────────────────┘
                                             │ 1                               ▲
                                             │                                 │
@@ -147,11 +147,16 @@ Represents a prospective buyer referred by a channel partner for a specific deve
   - `budget_range`: Target ticket size (e.g., "80L - 1.2Cr").
   - `requirement_type`: Desired configuration (e.g., "2 BHK", "3 BHK", "Penthouse", "Retail Shop").
   - `lost_reason`: Categorized failure reason if status is `Lost` (`Budget Mismatch`, `Location Unsuitable`, `Bought with Competitor`, `Follow-up Expired`, `Loan Eligibility Issue`).
-  - `created_at`: Exact timestamp when lead entered the system (**Lead Date**).
-  - `qualified_at`: Timestamp when lead passed qualification checks (Nullable).
+  - `created_at`: Exact timestamp when lead entered the system (**Lead Ingestion Date**).
+  - `qualified_at`: Milestone timestamp when lead passed qualification checks (Nullable).
   - `converted_at`: Timestamp when lead reached finalized booking (Nullable).
   - `lost_at`: Timestamp when lead was marked lost (Nullable).
   - `updated_at`: ISO-8601 UTC timestamp.
+
+#### Milestone-Based Qualification Rule
+> **Milestone Rule**: A lead is defined as **historically qualified** if and only if `qualified_at IS NOT NULL`.  
+> Funnel and cohort analytics must use the milestone timestamp (`qualified_at`) rather than the transient `status` column.  
+> If a lead progresses: `New` $\rightarrow$ `Qualified` $\rightarrow$ `Site Visit Scheduled` $\rightarrow$ `Site Visit Completed` $\rightarrow$ `Lost`, the lead **retains its historical qualification status and timestamp**, ensuring historical qualified funnel metrics remain accurate.
 
 ---
 
@@ -166,7 +171,7 @@ Represents an in-person or verified virtual tour of the project site conducted b
   - `channel_partner_id`: Foreign key to `channel_partners.id` (Inherited/Attributed).
   - `salesperson_id`: Foreign key to `salespeople.id` who hosted the tour.
   - `scheduled_at`: Planned date and time for the visit.
-  - `visited_at`: Actual completed timestamp of visit (**Visit Date**).
+  - `visited_at`: Actual completed timestamp of visit (**Visit Execution Date**).
   - `status`: Execution state (`Scheduled`, `Completed`, `Cancelled`, `No Show`).
   - `verification_type`: Security verification (`Digital Token OTP`, `Physical Entry Log`, `Sales Center QR`).
   - `outcome`: Qualitative outcome (`Positive / Intent to Book`, `Revisit Planned`, `Neutral / Exploring`, `Not Interested`).
@@ -181,7 +186,7 @@ Represents an executed transactional agreement and token payment for a specific 
 - **Primary Key**: `id` (UUID or Integer ID)
 - **Business Identifier**: `booking_reference` (e.g., `BK-2026-0089`)
 - **Key Attributes**:
-  - `lead_id`: Foreign key to `leads.id` (**Required**; unique per active booking).
+  - `lead_id`: Foreign key to `leads.id` (**Required**; cardinality `1` lead to `0..*` booking records, with at most one active/confirmed booking at any time).
   - `project_id`: Foreign key to `projects.id` (**Required**).
   - `channel_partner_id`: Foreign key to `channel_partners.id` (**Required**).
   - `salesperson_id`: Foreign key to `salespeople.id` (**Required**).
@@ -195,11 +200,11 @@ Represents an executed transactional agreement and token payment for a specific 
   - `commission_amount`: Computed commission amount in INR (e.g., `250000`).
   - `created_at`, `updated_at`: ISO-8601 UTC timestamps.
 
-#### Booking Status Lifecycle
-- `Initiated`: Booking form filled and token cheque/gateway transaction submitted; pending bank clearance.
-- `Confirmed`: Token cleared; unit officially reserved in developer inventory. **Counts towards core booking KPIs.**
-- `Cancelled`: Customer or developer cancelled reservation; unit returned to available inventory.
-- `Completed`: Full agreement registered; demand milestone schedule active.
+#### Booking Cardinality & Lifecycle Rules
+1. **Multi-Record History**: A single lead may have multiple historical booking records (e.g., an initial booking attempt that was `Cancelled`, followed by a subsequent `Confirmed` booking).
+2. **Single Active Booking Invariant**: A lead may have **at most one active/confirmed booking** at a time (`booking_status IN ('Initiated', 'Confirmed', 'Completed')`).
+3. **Commission Assumption Disclaimer**:
+   > **Synthetic Data Notice**: The default `2.0%` base commission rate and computed commission amounts are synthetic sample/demo data assumptions used for analytical pipeline modeling only. They do **NOT** represent Hariwishwa's actual commercial commission policy or partner contract terms.
 
 ---
 
@@ -225,7 +230,7 @@ A normalized historical audit ledger capturing all meaningful touchpoints and mi
 | `projects` | `leads` | `1` to `0..*` | A project receives multiple leads. Each lead is scoped to one project. |
 | `salespeople` | `leads` | `1` to `0..*` | A salesperson can be assigned to multiple leads. |
 | `leads` | `site_visits` | `1` to `0..*` | A lead can have zero, one, or multiple site visits (re-visits). |
-| `leads` | `bookings` | `1` to `0..1` | A lead can have at most one active/confirmed booking. |
+| `leads` | `bookings` | `1` to `0..*` | A lead may have multiple historical booking records (including cancelled attempts), but at most one active/confirmed booking at any given time. |
 | `projects` | `site_visits` | `1` to `0..*` | Site visits occur at a designated project location. |
 | `projects` | `bookings` | `1` to `0..*` | Bookings reserve units within a designated project. |
 | `channel_partners` | `bookings` | `1` to `0..*` | Bookings are attributed to the referring partner. |
@@ -238,17 +243,18 @@ A normalized historical audit ledger capturing all meaningful touchpoints and mi
 ### 4.1 The 4-Stage Official Funnel
 
 ```
-Stage 1: TOTAL LEADS
+Stage 1: TOTAL VALID LEADS
+  │  (Filter: leads.status != 'Invalid')
   │
-  │  (Qualification Filter: Status >= Qualified)
+  │  (Milestone Filter: leads.qualified_at IS NOT NULL)
   ▼
-Stage 2: QUALIFIED LEADS
+Stage 2: HISTORICALLY QUALIFIED LEADS
   │
-  │  (Visit Verification: Status = 'Completed')
+  │  (Execution Filter: site_visits.status = 'Completed')
   ▼
-Stage 3: COMPLETED SITE VISITS
+Stage 3: COMPLETED SITE VISITS (Unique Visited Leads)
   │
-  │  (Transaction Confirmation: Booking Status IN ('Confirmed', 'Completed'))
+  │  (Transaction Filter: bookings.booking_status IN ('Confirmed', 'Completed'))
   ▼
 Stage 4: CONFIRMED BOOKINGS
 ```
@@ -257,10 +263,11 @@ Stage 4: CONFIRMED BOOKINGS
 
 | Edge Case Scenario | Funnel Treatment | KPI Impact |
 |---|---|---|
+| **Lead Qualified then Lost** (`New` $\rightarrow$ `Qualified` $\rightarrow$ `Site Visit` $\rightarrow$ `Lost`) | Retains `qualified_at` timestamp. Lead is preserved in Stage 1 and Stage 2. | Stage 2 (Qualified Leads) accurately reflects all prospects who qualified, preventing historical funnel shrinkage. |
 | **Direct Booking without Site Visit** | Prospect books immediately (e.g., NRI investor). | Lead counted in Stage 1, Stage 2, and Stage 4. Does not inflate Stage 3 (Site Visits). Overall Lead $\rightarrow$ Booking rate accounts for this correctly. |
-| **Multiple Site Visits for Single Lead** | Lead visits project 3 times before deciding. | Total Site Visits count = 3. Unique Leads with Visit = 1. Funnel conversion rate uses unique lead attribution to prevent >100% ratios. |
+| **Multiple Site Visits for Single Lead** | Lead visits project 3 times before deciding. | Total Completed Site Visits = 3. Unique Leads with $\ge 1$ Visit = 1. Funnel conversion rate uses unique lead attribution to prevent >100% ratios. |
+| **Cancelled Booking followed by Re-booking** | Initial booking cancelled; lead later books another unit. | Lead has 2 booking records (`Cancelled` + `Confirmed`). Validated under `0..*` cardinality; only 1 active booking. Contributes 1 Confirmed Booking to Stage 4. |
 | **Cancelled / No-Show Site Visit** | Visit is scheduled but customer does not attend. | Counted in `Total Scheduled Visits`, excluded from `Completed Site Visits`. |
-| **Cancelled Booking after Token** | Token fails or buyer backs out. | Recorded in `Initiated Bookings`, excluded from `Confirmed Bookings`. Unit inventory restored. |
 | **Invalid / Duplicate Lead** | Wrong contact number or duplicate referral. | Flagged as `status = 'Invalid'`. Excluded from qualification and conversion rate denominators. |
 
 ---
@@ -270,7 +277,7 @@ Stage 4: CONFIRMED BOOKINGS
 ### 5.1 Volume & Count KPIs
 
 #### KPI 01: Total Partners
-- **Definition**: Total number of channel partner brokerages on boarded in the system.
+- **Definition**: Total number of channel partner brokerages onboarded in the system.
 - **Formula**:
   $$\text{Total Partners} = \text{COUNT}(\text{channel\_partners})$$
 - **Inclusion**: All registered partner records.
@@ -285,10 +292,11 @@ Stage 4: CONFIRMED BOOKINGS
 - **Formula**:
   $$\text{Total Leads} = \text{COUNT}(\text{leads } l \mid l.\text{status} \ne \text{'Invalid'})$$
 
-#### KPI 04: Qualified Leads
-- **Definition**: Leads that satisfy developer qualification criteria (budget match, timeline match, valid contact).
+#### KPI 04: Qualified Leads (Milestone-Based)
+- **Definition**: Prospects who passed developer qualification checks at any point in their lifecycle (`qualified_at IS NOT NULL`).
 - **Formula**:
-  $$\text{Qualified Leads} = \text{COUNT}(\text{leads } l \mid l.\text{status} \in \{\text{'Qualified'}, \text{'Site Visit Scheduled'}, \text{'Site Visit Completed'}, \text{'Booking Initiated'}, \text{'Converted'}\})$$
+  $$\text{Qualified Leads} = \text{COUNT}(\text{leads } l \mid l.\text{qualified\_at IS NOT NULL})$$
+- **Inclusion**: All leads with `qualified_at IS NOT NULL`. Leads that subsequently transitioned to `Lost` remain counted in historical qualified cohorts.
 
 #### KPI 05: Completed Site Visits
 - **Definition**: Verified on-site or digital property visits actually conducted with customer attendance.
@@ -310,24 +318,34 @@ Stage 4: CONFIRMED BOOKINGS
 ### 5.2 Efficiency & Conversion Rate KPIs
 
 #### KPI 08: Lead Qualification Rate
-- **Definition**: Proportion of incoming channel leads that qualify for project engagement.
+- **Definition**: Proportion of incoming valid channel leads that achieve the qualification milestone.
 - **Formula**:
-  $$\text{Lead Qualification Rate (\%)} = \left( \frac{\text{Qualified Leads}}{\text{Total Valid Leads}} \right) \times 100$$
+  $$\text{Lead Qualification Rate (\%)} = \left( \frac{\text{COUNT}(\text{leads where } \text{qualified\_at IS NOT NULL})}{\text{Total Valid Leads}} \right) \times 100$$
+- **Example Baseline**: $\frac{2,840}{3,860} \times 100 = 73.58\%$
 
-#### KPI 09: Qualified Lead to Visit Rate (Visit Conversion)
-- **Definition**: Proportion of qualified prospects who proceed to conduct a verified property tour.
+#### KPI 09A: Visit Completion Rate (Visit Execution Reliability)
+- **Definition**: Proportion of scheduled site visit appointments that are successfully executed.
 - **Formula**:
-  $$\text{Visit Conversion (\%)} = \left( \frac{\text{Unique Qualified Leads with } \ge 1 \text{ Completed Visit}}{\text{Qualified Leads}} \right) \times 100$$
+  $$\text{Visit Completion Rate (\%)} = \left( \frac{\text{Completed Site Visits}}{\text{Scheduled Site Visits}} \right) \times 100$$
+- **Example Baseline**: $\frac{1,872}{2,240} \times 100 = 83.57\%$
 
-#### KPI 10: Site Visit to Booking Rate (Close Conversion)
-- **Definition**: Proportion of conducted site visits that result in an executed unit booking.
+#### KPI 09B: Qualified Lead $\rightarrow$ Visit Rate (Visit Conversion)
+- **Definition**: Proportion of qualified prospects who proceed to conduct at least one verified property tour.
 - **Formula**:
-  $$\text{Visit to Booking Rate (\%)} = \left( \frac{\text{Confirmed Bookings}}{\text{Completed Site Visits}} \right) \times 100$$
+  $$\text{Qualified Lead } \rightarrow \text{ Visit Rate (\%)} = \left( \frac{\text{Unique Qualified Leads with } \ge 1 \text{ Completed Visit}}{\text{Qualified Leads}} \right) \times 100$$
+- **Example Baseline**: $\frac{1,377}{2,840} \times 100 = 48.49\% \approx 48.5\%$
 
-#### KPI 11: Overall Lead to Booking Rate (End-to-End Funnel Efficiency)
+#### KPI 10: Site Visit $\rightarrow$ Booking Rate (Close Rate)
+- **Definition**: Proportion of prospects who conducted a site visit and finalized a unit booking.
+- **Formula**:
+  $$\text{Site Visit } \rightarrow \text{ Booking Rate (\%)} = \left( \frac{\text{Confirmed Bookings}}{\text{Unique Leads with } \ge 1 \text{ Completed Visit}} \right) \times 100$$
+- **Example Baseline**: $\frac{446}{1,377} \times 100 = 32.39\%$
+
+#### KPI 11: Overall Lead $\rightarrow$ Booking Rate (End-to-End Funnel Efficiency)
 - **Definition**: Overall channel pipeline conversion from initial lead referral to confirmed sale.
 - **Formula**:
   $$\text{End-to-End Conversion (\%)} = \left( \frac{\text{Confirmed Bookings}}{\text{Total Valid Leads}} \right) \times 100$$
+- **Example Baseline**: $\frac{446}{3,860} \times 100 = 11.55\%$
 
 ---
 
@@ -338,7 +356,7 @@ To prevent cohort skew and temporal ambiguity, date attributes are strictly part
 | Event Milestone | Exact Field | Semantic Role in Reporting |
 |---|---|---|
 | **Lead Ingestion** | `leads.created_at` | Determines monthly lead cohort volume. |
-| **Lead Qualification** | `leads.qualified_at` | Evaluates salesperson/partner response SLA. |
+| **Lead Qualification** | `leads.qualified_at` | Determines qualification milestone and response SLA. |
 | **Site Visit Execution** | `site_visits.visited_at` | Establishes monthly footfall and visit velocity. |
 | **Booking Confirmation** | `bookings.booking_date` | Establishes revenue realization and monthly sales closure numbers. |
 
@@ -364,6 +382,10 @@ To prevent cohort skew and temporal ambiguity, date attributes are strictly part
    - `bookings.commission_rate_pct` between `0.0` and `10.0%`.
 5. **Controlled Enumerations**:
    - All status fields (`partner.tier`, `project.status`, `lead.status`, `site_visit.status`, `booking.status`) must strictly adhere to the defined enums.
+6. **Booking Cardinality & Single Active Booking Invariant**:
+   - A lead record may be referenced by multiple historical booking records (`0..*`).
+   - A lead record cannot be linked to more than one concurrent booking where `booking_status IN ('Initiated', 'Confirmed', 'Completed')`.
+   - Subsequent booking records are permitted only if prior bookings have transitioned to `Cancelled`.
 
 ---
 
@@ -437,7 +459,7 @@ CREATE TABLE leads (
     requirement_type VARCHAR(50),
     lost_reason VARCHAR(100),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    qualified_at TIMESTAMP,
+    qualified_at TIMESTAMP, -- Milestone timestamp for historical qualification
     converted_at TIMESTAMP,
     lost_at TIMESTAMP,
     notes TEXT,
@@ -447,6 +469,7 @@ CREATE INDEX idx_leads_partner ON leads(channel_partner_id);
 CREATE INDEX idx_leads_project ON leads(project_id);
 CREATE INDEX idx_leads_status ON leads(status);
 CREATE INDEX idx_leads_created ON leads(created_at);
+CREATE INDEX idx_leads_qualified ON leads(qualified_at);
 
 -- 5. Site Visits
 CREATE TABLE site_visits (
@@ -470,11 +493,11 @@ CREATE INDEX idx_sv_partner ON site_visits(channel_partner_id);
 CREATE INDEX idx_sv_project ON site_visits(project_id);
 CREATE INDEX idx_sv_status ON site_visits(status);
 
--- 6. Bookings
+-- 6. Bookings (Lead 1 -> 0..* Booking Records, at most 1 active)
 CREATE TABLE bookings (
     id VARCHAR(36) PRIMARY KEY,
     booking_reference VARCHAR(30) UNIQUE NOT NULL,
-    lead_id VARCHAR(36) UNIQUE NOT NULL REFERENCES leads(id),
+    lead_id VARCHAR(36) NOT NULL REFERENCES leads(id),
     project_id VARCHAR(36) NOT NULL REFERENCES projects(id),
     channel_partner_id VARCHAR(36) NOT NULL REFERENCES channel_partners(id),
     salesperson_id VARCHAR(36) NOT NULL REFERENCES salespeople(id),
@@ -484,15 +507,21 @@ CREATE TABLE bookings (
     booking_status VARCHAR(30) NOT NULL, -- Initiated, Confirmed, Cancelled, Completed
     booking_value DECIMAL(14, 2) NOT NULL,
     token_amount DECIMAL(14, 2) NOT NULL,
-    commission_rate_pct DECIMAL(5, 2) NOT NULL DEFAULT 2.0,
+    commission_rate_pct DECIMAL(5, 2) NOT NULL DEFAULT 2.0, -- Synthetic demo assumption
     commission_amount DECIMAL(14, 2) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX idx_bk_lead ON bookings(lead_id);
 CREATE INDEX idx_bk_partner ON bookings(channel_partner_id);
 CREATE INDEX idx_bk_project ON bookings(project_id);
 CREATE INDEX idx_bk_status ON bookings(booking_status);
 CREATE INDEX idx_bk_date ON bookings(booking_date);
+
+-- Partial index ensuring at most 1 active booking per lead:
+CREATE UNIQUE INDEX idx_one_active_booking_per_lead
+ON bookings(lead_id)
+WHERE booking_status IN ('Initiated', 'Confirmed', 'Completed');
 
 -- 7. Partner Activities
 CREATE TABLE partner_activities (
