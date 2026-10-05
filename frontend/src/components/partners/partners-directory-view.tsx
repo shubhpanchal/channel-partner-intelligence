@@ -131,19 +131,19 @@ export function PartnersDirectoryView() {
   // Derive portfolio summary stats from API
   const totalPartnersCount = overviewData?.tier_breakdown
     ? overviewData.tier_breakdown.reduce((acc, curr) => acc + curr.partners_count, 0)
-    : pagination?.total || 175;
+    : pagination?.total || 36;
 
-  const recentlyActivePartnersCount = overviewData?.kpis?.active_partners?.value || 172;
+  const recentlyActivePartnersCount = overviewData?.kpis?.active_partners?.value || 28;
 
   const tier1Count =
     overviewData?.tier_breakdown?.find((t) => t.tier.includes("Tier 1"))
-      ?.partners_count || 18;
+      ?.partners_count || 6;
   const tier2Count =
     overviewData?.tier_breakdown?.find((t) => t.tier.includes("Tier 2"))
-      ?.partners_count || 45;
+      ?.partners_count || 10;
   const tier3Count =
     overviewData?.tier_breakdown?.find((t) => t.tier.includes("Tier 3"))
-      ?.partners_count || 112;
+      ?.partners_count || 20;
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in-50 duration-300">
@@ -292,7 +292,7 @@ export function PartnersDirectoryView() {
               </select>
             </div>
 
-            {/* City Filter */}
+            {/* City / Micro-Market Filter */}
             <div>
               <select
                 aria-label="Filter by city"
@@ -304,12 +304,14 @@ export function PartnersDirectoryView() {
                 className="w-full text-xs h-9 px-3 rounded-md border border-slate-200 bg-white text-slate-800 shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 data-testid="partners-city-filter"
               >
-                <option value="">All Cities</option>
-                <option value="Pune">Pune</option>
-                <option value="Mumbai">Mumbai</option>
-                <option value="Bangalore">Bangalore</option>
-                <option value="Delhi NCR">Delhi NCR</option>
-                <option value="Hyderabad">Hyderabad</option>
+                <option value="">All Micro-Markets</option>
+                <option value="Pune">Pune (All)</option>
+                <option value="Tathawade">Tathawade</option>
+                <option value="Wakad">Wakad</option>
+                <option value="Hinjawadi">Hinjawadi</option>
+                <option value="Ravet">Ravet</option>
+                <option value="Punawale">Punawale</option>
+                <option value="Baner">Baner</option>
               </select>
             </div>
 

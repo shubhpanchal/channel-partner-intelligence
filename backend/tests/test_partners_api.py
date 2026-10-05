@@ -88,7 +88,7 @@ def seeded_client(seeded_db_session: Session) -> Generator[TestClient, None, Non
 
 
 def test_list_partners_default_pagination(seeded_client: TestClient):
-    """Test GET /api/v1/partners returns 200 with default 20 items and total 175."""
+    """Test GET /api/v1/partners returns 200 with default 20 items and total 36."""
     response = seeded_client.get("/api/v1/partners")
     assert response.status_code == 200
     data = response.json()
@@ -96,10 +96,10 @@ def test_list_partners_default_pagination(seeded_client: TestClient):
     assert "items" in data
     assert "pagination" in data
     assert len(data["items"]) == 20
-    assert data["pagination"]["total"] == 175
+    assert data["pagination"]["total"] == 36
     assert data["pagination"]["page"] == 1
     assert data["pagination"]["page_size"] == 20
-    assert data["pagination"]["total_pages"] == 9
+    assert data["pagination"]["total_pages"] == 2
 
     # Verify first item shape
     first_item = data["items"][0]
@@ -122,7 +122,7 @@ def test_list_partners_page_navigation(seeded_client: TestClient):
     assert res_p1.status_code == 200
     p1_data = res_p1.json()
     assert len(p1_data["items"]) == 10
-    assert p1_data["pagination"]["total_pages"] == 18
+    assert p1_data["pagination"]["total_pages"] == 4
 
     res_p2 = seeded_client.get("/api/v1/partners?page=2&page_size=10")
     assert res_p2.status_code == 200
@@ -139,7 +139,7 @@ def test_list_partners_max_page_size(seeded_client: TestClient):
     res = seeded_client.get("/api/v1/partners?page_size=100")
     assert res.status_code == 200
     data = res.json()
-    assert len(data["items"]) == 100
+    assert len(data["items"]) == 36
     assert data["pagination"]["page_size"] == 100
 
 
@@ -168,7 +168,7 @@ def test_list_partners_filter_active(seeded_client: TestClient):
     for item in inactive_data["items"]:
         assert item["active"] is False
 
-    assert active_data["pagination"]["total"] + inactive_data["pagination"]["total"] == 175
+    assert active_data["pagination"]["total"] + inactive_data["pagination"]["total"] == 36
 
 
 def test_list_partners_filter_city(seeded_client: TestClient):
@@ -183,15 +183,19 @@ def test_list_partners_filter_city(seeded_client: TestClient):
 
 def test_list_partners_search_by_name(seeded_client: TestClient):
     """Test partial search by partner name."""
-    res = seeded_client.get("/api/v1/partners?search=apex")
+    res_init = seeded_client.get("/api/v1/partners?page_size=5")
+    partner_name = res_init.json()["items"][0]["name"]
+    query_prefix = partner_name.split()[0].lower()
+
+    res = seeded_client.get(f"/api/v1/partners?search={query_prefix}")
     assert res.status_code == 200
     data = res.json()
     assert data["pagination"]["total"] > 0
     for item in data["items"]:
         matched = (
-            "apex" in item["name"].lower()
-            or "apex" in item["contact_person"].lower()
-            or "apex" in item["partner_code"].lower()
+            query_prefix in item["name"].lower()
+            or query_prefix in item["contact_person"].lower()
+            or query_prefix in item["partner_code"].lower()
         )
         assert matched
 

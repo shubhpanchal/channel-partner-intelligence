@@ -47,10 +47,10 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
     """Generate the complete deterministic synthetic dataset as a dictionary of entity records."""
     rng = random.Random(seed)
 
-    # 1. Salespeople (10)
+    # 1. Salespeople (5)
     salespeople = [dict(sp) for sp in SALESPEOPLE_TEMPLATES]
 
-    # 2. Projects (5)
+    # 2. Projects (4: Skyfinia P1/P2, Infinia P1/P2 in Tathawade, Pune)
     projects = []
     for pt in PROJECT_TEMPLATES:
         p_dict = dict(pt)
@@ -59,14 +59,14 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
         p_dict["launch_date"] = datetime.strptime(p_dict["launch_date"], "%Y-%m-%d").date()
         projects.append(p_dict)
 
-    # 3. Channel Partners (175 total: 18 Tier 1, 45 Tier 2, 112 Tier 3)
+    # 3. Channel Partners (36 total: 6 Tier 1, 10 Tier 2, 20 Tier 3)
     channel_partners = []
     partner_archetypes: Dict[str, str] = {}
 
     partner_id_counter = 1001
 
-    # Tier 1: 18 partners
-    for i in range(18):
+    # Tier 1: 6 partners
+    for i in range(6):
         cp_id = f"cp-{partner_id_counter}"
         partner_code = f"CP-{partner_id_counter}"
         prefix = rng.choice(PARTNER_PREFIXES)
@@ -76,13 +76,15 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
         locality = rng.choice(PUNE_LOCALITIES)
         assigned_sp = salespeople[i % len(salespeople)]["id"]
 
-        # Archetype assignment
-        if i < 10:
-            archetype = "elite_core"
-        elif i < 15:
-            archetype = "high_volume_moderate_conversion"
+        # Archetype assignment for Tier 1
+        if i in (0, 1):
+            archetype = "skyfinia_specialist"
+        elif i in (2, 3):
+            archetype = "infinia_specialist"
+        elif i == 4:
+            archetype = "dual_portfolio_elite"
         else:
-            archetype = "boutique_luxury"
+            archetype = "boutique_high_conversion"
         partner_archetypes[cp_id] = archetype
 
         channel_partners.append({
@@ -104,8 +106,8 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
         })
         partner_id_counter += 1
 
-    # Tier 2: 45 partners
-    for i in range(45):
+    # Tier 2: 10 partners
+    for i in range(10):
         cp_id = f"cp-{partner_id_counter}"
         partner_code = f"CP-{partner_id_counter}"
         prefix = rng.choice(PARTNER_PREFIXES)
@@ -113,15 +115,15 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
         name = f"{prefix} {suffix}"
         contact_person = f"{rng.choice(FIRST_NAMES)} {rng.choice(LAST_NAMES)}"
         locality = rng.choice(PUNE_LOCALITIES)
-        assigned_sp = salespeople[(18 + i) % len(salespeople)]["id"]
+        assigned_sp = salespeople[(6 + i) % len(salespeople)]["id"]
 
-        # Archetype assignment
-        if i < 15:
-            archetype = "emerging_growth"
-        elif i < 30:
-            archetype = "moderate_steady"
-        elif i < 40:
-            archetype = "high_volume_low_conversion"
+        # Archetype assignment for Tier 2
+        if i in (0, 1, 2):
+            archetype = "skyfinia_growth"
+        elif i in (3, 4, 5):
+            archetype = "infinia_growth"
+        elif i in (6, 7):
+            archetype = "high_volume_moderate"
         else:
             archetype = "declining_at_risk"
         partner_archetypes[cp_id] = archetype
@@ -145,8 +147,8 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
         })
         partner_id_counter += 1
 
-    # Tier 3: 112 partners
-    for i in range(112):
+    # Tier 3: 20 partners
+    for i in range(20):
         cp_id = f"cp-{partner_id_counter}"
         partner_code = f"CP-{partner_id_counter}"
         prefix = rng.choice(PARTNER_PREFIXES)
@@ -154,16 +156,21 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
         name = f"{prefix} {suffix}"
         contact_person = f"{rng.choice(FIRST_NAMES)} {rng.choice(LAST_NAMES)}"
         locality = rng.choice(PUNE_LOCALITIES)
-        assigned_sp = salespeople[(18 + 45 + i) % len(salespeople)]["id"]
+        assigned_sp = salespeople[(6 + 10 + i) % len(salespeople)]["id"]
 
-        # Archetype assignment
-        if i < 80:
-            archetype = "broad_active"
-        elif i < 100:
-            archetype = "infrequent_sporadic"
+        # Archetype assignment for Tier 3
+        if i < 6:
+            archetype = "emerging_growth"
+        elif i < 12:
+            archetype = "moderate_steady"
+        elif i < 16:
+            archetype = "sporadic_contributor"
         else:
             archetype = "dormant"
         partner_archetypes[cp_id] = archetype
+
+        # Mark 2 dormant partners as inactive accounts
+        is_active = False if (archetype == "dormant" and i >= 18) else True
 
         channel_partners.append({
             "id": cp_id,
@@ -175,8 +182,8 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
             "email": f"sales@{prefix.lower()}{suffix.split()[0].lower()}.in",
             "city": "Pune",
             "location": locality,
-            "onboarding_date": date(2024 if i < 60 else 2025, 1 + (i % 12), 1 + (i % 25)),
-            "active": False if archetype == "dormant" and i >= 106 else True,
+            "onboarding_date": date(2024 if i < 10 else 2025, 1 + (i % 12), 1 + (i % 25)),
+            "active": is_active,
             "tier": "Tier 3",
             "channel_type": "Independent Broker" if i % 4 != 0 else "Digital Channel Partner",
             "assigned_salesperson_id": assigned_sp,
@@ -226,33 +233,35 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
     project_lookup = {p["id"]: p for p in projects}
     project_templates_lookup = {p["id"]: p for p in PROJECT_TEMPLATES}
 
-    # Generate leads by partner according to archetype
+    # Generate leads by partner according to archetype & project affinity
     for partner in channel_partners:
         cp_id = partner["id"]
         archetype = partner_archetypes[cp_id]
         assigned_sp = partner["assigned_salesperson_id"]
 
-        # Number of leads per partner based on archetype
-        if archetype == "elite_core":
+        # Target lead counts calibrated for ~1,400 total leads
+        if archetype == "skyfinia_specialist":
+            num_leads = rng.randint(68, 76)
+        elif archetype == "infinia_specialist":
+            num_leads = rng.randint(68, 76)
+        elif archetype == "dual_portfolio_elite":
+            num_leads = rng.randint(64, 72)
+        elif archetype == "boutique_high_conversion":
+            num_leads = rng.randint(48, 56)
+        elif archetype in ("skyfinia_growth", "infinia_growth"):
+            num_leads = rng.randint(44, 52)
+        elif archetype == "high_volume_moderate":
             num_leads = rng.randint(46, 54)
-        elif archetype == "high_volume_moderate_conversion":
-            num_leads = rng.randint(40, 48)
-        elif archetype == "boutique_luxury":
-            num_leads = rng.randint(20, 26)
-        elif archetype == "emerging_growth":
-            num_leads = rng.randint(24, 32)
-        elif archetype == "moderate_steady":
-            num_leads = rng.randint(18, 24)
-        elif archetype == "high_volume_low_conversion":
-            num_leads = rng.randint(26, 34)
         elif archetype == "declining_at_risk":
-            num_leads = rng.randint(10, 16)
-        elif archetype == "broad_active":
+            num_leads = rng.randint(18, 26)
+        elif archetype == "emerging_growth":
+            num_leads = rng.randint(30, 38)
+        elif archetype == "moderate_steady":
             num_leads = rng.randint(22, 28)
-        elif archetype == "infrequent_sporadic":
-            num_leads = rng.randint(3, 7)
+        elif archetype == "sporadic_contributor":
+            num_leads = rng.randint(8, 16)
         else:  # dormant
-            num_leads = 0 if not partner["active"] else rng.randint(0, 1)
+            num_leads = 0 if not partner["active"] else rng.randint(1, 2)
 
         for _ in range(num_leads):
             # Lead creation date
@@ -278,11 +287,21 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                     hours=rng.randint(6, 18), minutes=rng.randint(0, 59)
                 )
 
-            # Assign project
-            if archetype == "boutique_luxury":
-                # Prefers Luxury Solaris or Zenith Commercial
-                project_id = rng.choice(["prj-101", "prj-103"])
+            # Assign project based on partner's project affinity
+            if archetype in ("skyfinia_specialist", "skyfinia_growth"):
+                # 85% Skyfinia Phase 1 or 2, 15% Infinia
+                if rng.random() < 0.85:
+                    project_id = rng.choice(["prj-sky-p1", "prj-sky-p2"])
+                else:
+                    project_id = rng.choice(["prj-inf-p1", "prj-inf-p2"])
+            elif archetype in ("infinia_specialist", "infinia_growth"):
+                # 85% Infinia Phase 1 or 2, 15% Skyfinia
+                if rng.random() < 0.85:
+                    project_id = rng.choice(["prj-inf-p1", "prj-inf-p2"])
+                else:
+                    project_id = rng.choice(["prj-sky-p1", "prj-sky-p2"])
             else:
+                # Balanced across all 4 projects
                 project_id = rng.choice(list(project_lookup.keys()))
 
             proj_tmpl = project_templates_lookup[project_id]
@@ -298,18 +317,23 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
 
             # Determine lifecycle path
             # Milestone qualification probability
-            if archetype in ("elite_core", "boutique_luxury"):
+            if archetype in (
+                "skyfinia_specialist",
+                "infinia_specialist",
+                "dual_portfolio_elite",
+                "boutique_high_conversion",
+            ):
                 is_invalid = rng.random() < 0.01
                 qualifies = not is_invalid and rng.random() < 0.88
-            elif archetype == "high_volume_low_conversion":
+            elif archetype in ("declining_at_risk", "sporadic_contributor"):
                 is_invalid = rng.random() < 0.05
-                qualifies = not is_invalid and rng.random() < 0.55
+                qualifies = not is_invalid and rng.random() < 0.58
             elif archetype == "dormant":
                 is_invalid = False
                 qualifies = False
             else:
-                is_invalid = rng.random() < 0.03
-                qualifies = not is_invalid and rng.random() < 0.74
+                is_invalid = rng.random() < 0.02
+                qualifies = not is_invalid and rng.random() < 0.76
 
             if is_invalid:
                 status = "Invalid"
@@ -342,7 +366,13 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                     lost_reason = None
                 else:
                     # Will this qualified lead schedule a site visit?
-                    visit_prob = 0.74 if archetype in ("elite_core", "boutique_luxury") else 0.58
+                    is_elite = archetype in (
+                        "skyfinia_specialist",
+                        "infinia_specialist",
+                        "dual_portfolio_elite",
+                        "boutique_high_conversion",
+                    )
+                    visit_prob = 0.76 if is_elite else 0.62
                     schedules_visit = rng.random() < visit_prob
 
                     if not schedules_visit:
@@ -565,8 +595,13 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                         last_visited_dt = revisit_visited
 
                     # Conversion from completed visit to Booking
-                    is_elite = archetype in ("elite_core", "boutique_luxury")
-                    booking_close_prob = 0.52 if is_elite else 0.42
+                    is_elite = archetype in (
+                        "skyfinia_specialist",
+                        "infinia_specialist",
+                        "dual_portfolio_elite",
+                        "boutique_high_conversion",
+                    )
+                    booking_close_prob = 0.44 if is_elite else 0.36
                     positive_outcome = outcome in ("Positive / Intent to Book", "Revisit Planned")
                     books_unit = positive_outcome and (rng.random() < booking_close_prob)
 

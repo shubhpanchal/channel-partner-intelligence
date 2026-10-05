@@ -135,14 +135,17 @@ export function OverviewView({ filters }: OverviewViewProps = {}) {
             <div>
               <div className="flex items-center space-x-2">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  Live Executive Intelligence Stream
+                  Harivishva Tathawade Portfolio · Executive Intelligence
                 </h4>
+                <Badge variant="outline" className="border-blue-300 text-blue-800 text-[10px] bg-blue-50">
+                  Skyfinia & Infinia
+                </Badge>
                 <Badge variant="outline" className="border-emerald-300 text-emerald-800 text-[10px] bg-emerald-50">
-                  Real Database
+                  Synthetic Data
                 </Badge>
               </div>
               <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                Consolidated partner network velocity, funnel conversion metrics, and operational audit trail.
+                Consolidated partner network velocity, funnel conversion metrics, and operational audit trail across Skyfinia and Infinia residential phases.
               </p>
             </div>
           </div>

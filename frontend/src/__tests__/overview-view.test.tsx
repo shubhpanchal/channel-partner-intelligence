@@ -214,7 +214,9 @@ describe("OverviewView Component", () => {
     render(<OverviewView />);
 
     // Top banner
-    expect(screen.getByText("Live Executive Intelligence Stream")).toBeInTheDocument();
+    expect(
+      screen.getByText("Harivishva Tathawade Portfolio · Executive Intelligence")
+    ).toBeInTheDocument();
 
     // 1. Active Partners Card
     expect(screen.getByTestId("kpi-value-active-partners")).toHaveTextContent("152");

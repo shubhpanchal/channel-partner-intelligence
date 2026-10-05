@@ -4,13 +4,14 @@
 
 **Channel Partner Intelligence** is an enterprise-grade analytics and decision-support platform designed to monitor, analyze, and optimize channel partner (broker/agent) performance across real estate and multi-tier distribution networks.
 
-### Current Status: Phase 2C-2 — Partners API & Real Partners Directory
+### Current Status: Phase 2D — Harivishva Demo Personalization
 - **Phase 1 Complete**: Light B2B SaaS UI foundation, design tokens, reusable states, and test quality gates established.
 - **Phase 2A Complete**: Formally defined business domain model ([`docs/BUSINESS_DOMAIN.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/BUSINESS_DOMAIN.md)) and REST API contracts ([`docs/API_CONTRACTS.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/API_CONTRACTS.md)).
 - **Phase 2B Complete**: SQLAlchemy 2.0 database models, SQLite schema with foreign keys and partial unique indexes, deterministic synthetic data generator (`SEED = 42`), comprehensive data-integrity validator, and backend CLI management tools.
 - **Phase 2C-1 Complete**: First end-to-end vertical slice connecting `GET /api/v1/overview/summary` to the Next.js frontend via TanStack Query, eliminating mock data and rendering 100% database-backed metrics.
 - **Phase 2C-2 Complete**: Second end-to-end vertical slice delivering `GET /api/v1/partners` and `GET /api/v1/partners/{id}`, real-time filtering, debounced multi-field search, zero N+1 batch-grouped SQL queries, pagination, and Partner Detail view with 4-stage conversion funnels and transaction logs.
-- Strict quality gates enforced across both backend (>96% coverage) and frontend (>98% coverage).
+- **Phase 2D Complete**: Personalized synthetic demo tailored specifically to Harivishva's Tathawade (Pune) residential portfolio across 2 project families (Skyfinia Phase 1 & 2, Infinia Phase 1 & 2), 5 sales managers, 36 partners (6 T1, 10 T2, 20 T3), ~1,230 leads, ~704 visits, and ~139 bookings, accompanied by subtle synthetic demo context indicators.
+- Strict quality gates enforced across both backend (>96% coverage) and frontend (>99% coverage).
 
 ---
 
@@ -137,19 +138,40 @@ To prevent data-heavy lists from bloating page height and causing horizontal ove
 
 ---
 
-## 5. Database Architecture & SQLite Configuration
+## 5. Harivishva Demo Personalization & Synthetic Architecture (Phase 2D)
 
-### 4.1 SQLAlchemy 2.0 Models
+### 5.1 Geographic & Portfolio Specialization
+The demo dataset is strictly personalized for Harivishva's **Tathawade, Pune** residential presence:
+- **2 Project Families**: `Skyfinia` and `Infinia`.
+- **4 Projects**: `Skyfinia Phase 1` (`PRJ-SKY-P1`), `Skyfinia Phase 2` (`PRJ-SKY-P2`), `Infinia Phase 1` (`PRJ-INF-P1`), and `Infinia Phase 2` (`PRJ-INF-P2`).
+- **5 Internal Sales/Relationship Managers**: Sales leads under the `@harivishva.com` domain.
+- **36 Channel Partners**: Scaled realistically for a mid-market regional developer (6 Tier 1 Elite, 10 Tier 2 Growth, 20 Tier 3 Active).
+
+### 5.2 Determinism & Seed Behavior
+- Canonical generator seed: `SEED = 42`.
+- Generates 1,230 leads (1,211 valid, 919 qualified), 704 scheduled site visits (606 completed), and 139 confirmed/completed bookings.
+- Project affinities (Skyfinia specialists, Infinia specialists, dual portfolio elite) ensure meaningful project booking contribution charts on individual partner detail pages.
+
+### 5.3 Synthetic vs. Production Separation
+- The application remains 100% reusable and cloud-native.
+- No company names or business logic are hardcoded into core calculation engines or SQL models.
+- Transparent badges (`Demo Environment · Synthetic Data`) provide clear executive disclosure.
+
+---
+
+## 6. Database Architecture & SQLite Configuration
+
+### 6.1 SQLAlchemy 2.0 Models
 All database models are implemented using typed SQLAlchemy 2.0 declarative definitions in [`backend/app/models/entities.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/models/entities.py):
-- **`Salesperson`** (`salespeople`): Internal developer sales managers and team clusters.
-- **`Project`** (`projects`): Real estate assets with dynamic unit inventory tracking.
-- **`ChannelPartner`** (`channel_partners`): Brokerages and consultants partitioned into Tier 1 (18), Tier 2 (45), and Tier 3 (112).
+- **`Salesperson`** (`salespeople`): 5 internal relationship managers.
+- **`Project`** (`projects`): 4 Harivishva projects across Skyfinia and Infinia.
+- **`ChannelPartner`** (`channel_partners`): 36 brokerages and consultants partitioned into Tier 1 (6), Tier 2 (10), and Tier 3 (20).
 - **`Lead`** (`leads`): Customer prospects with milestone qualification (`qualified_at`).
-- **`SiteVisit`** (`site_visits`): Scheduled and completed physical or digital tours.
+- **`SiteVisit`** (`site_visits`): Scheduled and completed physical tours in Tathawade.
 - **`Booking`** (`bookings`): Transaction records with active vs terminal status tracking.
 - **`PartnerActivity`** (`partner_activities`): Historical touchpoint audit ledger.
 
-### 4.2 SQLite Foreign Keys & Partial Unique Indexes
+### 6.2 SQLite Foreign Keys & Partial Unique Indexes
 - **Foreign Key Enforcement**: SQLite does not enable foreign keys by default. An engine event listener automatically executes `PRAGMA foreign_keys=ON;` upon establishing every connection.
 - **Active Booking Invariant**: To guarantee that a lead never has more than one concurrent active booking, a SQLite partial unique index is defined:
   ```python

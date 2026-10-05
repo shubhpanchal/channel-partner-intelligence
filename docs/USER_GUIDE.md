@@ -43,45 +43,48 @@ The platform features a clean left-hand navigation bar and top header that allow
 
 ## 3. Platform Modules Overview
 
-### 3.1 Executive Overview *(Phase 2C-1 — Live Database-Backed)*
-The **Executive Overview** is your real-time command center for monitoring channel partner network performance, sales funnel velocity, and recent operational events.
+### 3.1 Executive Overview *(Phase 2D — Harivishva Demo Environment)*
+The **Executive Overview** is your real-time command center for monitoring Harivishva's Tathawade channel partner network, project funnel velocity (Skyfinia & Infinia), and operational audit stream.
+
+> [!NOTE]
+> **Demo Environment Indicator**: A subtle, persistent indicator (`Demo Environment · Synthetic Data`) informs stakeholders that all data is mathematically synthesized for simulation and preview purposes.
 
 - **Key Performance Indicators (KPI Cards)**:
-  - **Active Partners (152)**: Active brokers who logged $\ge 1$ qualifying activity within the trailing 90-day window, broken down by performance tier (Tier 1: 18, Tier 2: 40, Tier 3: 94).
-  - **Channel Lead Flow (3,906)**: Valid leads received from partners, showing milestone qualification count (2,891 qualified leads) and overall qualification efficiency (74.0%).
-  - **Visit Conversion (50.9%)**: Percentage of qualified leads who completed at least one verified property site visit (1,472 unique visited prospects out of 1,743 completed visits).
-  - **Bookings Velocity (454 Units / ₹438.51 Cr)**: Total confirmed unit closures generated through the channel network, showing visit-to-booking efficiency (29.9%) and total revenue value.
-- **Pipeline Velocity Trends**: Real-time month-by-month progression comparing inbound lead volume against completed property tours and finalized bookings.
-- **Partner Tier Breakdown**: Live distribution of all 175 registered partner firms across performance tiers: Tier 1 Elite (18 firms, 10.3%), Tier 2 Growth (45 firms, 25.7%), and Tier 3 Active (112 firms, 64.0%).
-- **Recent Channel Activity**: Live stream of verified actions (lead submissions, site visits, booking tokens, and tier changes) logged in the database audit ledger.
+  - **Active Partners (28)**: Active brokers who logged $\ge 1$ qualifying activity within the trailing 90-day window, broken down by performance tier (Tier 1: 6, Tier 2: 8, Tier 3: 14).
+  - **Channel Lead Flow (1,211)**: Valid leads received from partners across Skyfinia and Infinia, showing milestone qualification count (919 qualified leads) and overall qualification efficiency (75.9%).
+  - **Visit Conversion (55.2%)**: Percentage of qualified leads who completed at least one verified property site visit in Tathawade (507 unique visited prospects out of 606 completed visits).
+  - **Bookings Velocity (139 Units / ₹123.6 Cr)**: Total confirmed unit closures generated through the channel network, showing visit-to-booking efficiency (25.4%) and total revenue value.
+- **Pipeline Velocity Trends**: Real-time month-by-month progression comparing inbound lead volume against completed property tours and finalized bookings across 2026.
+- **Partner Tier Breakdown**: Live distribution of all 36 registered partner firms across performance tiers: Tier 1 Elite (6 firms, 16.7%), Tier 2 Growth (10 firms, 27.8%), and Tier 3 Active (20 firms, 55.6%).
+- **Recent Channel Activity**: Live stream of verified actions (lead submissions, site visits, booking tokens, and tier changes) logged in the database audit ledger for Skyfinia and Infinia.
 - **Attention Center**: Deterministic operational notices highlighting key pipeline events (such as direct bookings executed without prior completed visits).
 
 ---
 
-### 3.2 Channel Partners Portfolio & Analytics *(Phase 2C-2 — Live Database-Backed)*
-A comprehensive enterprise management view of all 175 registered channel partners powered by real-time database queries, portfolio-first card presentation, and in-depth visual analytics.
+### 3.2 Channel Partners Portfolio & Analytics *(Phase 2D — Live Database-Backed)*
+A focused enterprise management view of 36 channel partners servicing Harivishva's Tathawade developments, powered by real-time database queries, portfolio-first card presentation, and in-depth visual analytics.
 
 - **Portfolio Summary Context Strip**:
-  - Live network-wide metrics displayed above the partner deck: Total Partners (175), Trailing 90-Day Active Partners (152), Tier 1 Elite (18), Tier 2 Growth (45), and Tier 3 Active (112).
+  - Live network-wide metrics displayed above the partner deck: Total Partners (36), Trailing 90-Day Active Partners (28), Tier 1 Elite (6), Tier 2 Growth (10), and Tier 3 Active (20).
 - **Cards vs. List View Toggle**:
-  - **Cards View (Default)**: Visual portfolio grid (3 cards/row desktop, 2 cards/row tablet, 1 card/row mobile) designed for executive scanning. Each card surfaces identity, tier badge, active status, operational city/locality, assigned relationship manager, lead/visit/booking volume chips, overall conversion percentage, and visit-to-booking efficiency.
+  - **Cards View (Default)**: Visual portfolio grid (3 cards/row desktop, 2 cards/row tablet, 1 card/row mobile) designed for executive scanning. Each card surfaces identity, tier badge, active status, operational city/locality (Tathawade, Wakad, Hinjawadi, Ravet, Punawale, Baner), assigned relationship manager, lead/visit/booking volume chips, overall conversion percentage, and visit-to-booking efficiency.
   - **List View**: High-density operational data table providing tabular comparison and granular column alignment.
 - **Search & Multi-Criteria Filtering**:
   - **Debounced Global Search**: Instantly find partners by commercial agency name, principal contact person, or unique partner code (e.g. `CP-1001`).
   - **Tier Filter**: Filter by business performance classification (Tier 1 Elite, Tier 2 Growth, Tier 3 Active).
   - **Account Status Filter**: Switch between Active and Inactive partner accounts.
-  - **Operational City Filter**: Slice partner networks by operational hub (Pune, Mumbai, Bangalore, Delhi NCR, Hyderabad).
+  - **Operational Locality Filter**: Slice partner networks by Pune micro-market (Tathawade, Wakad, Hinjawadi, Ravet, Punawale, Baner).
   - **Deterministic Sorting**: Sort partner records by Name (A-Z), Onboarding Date (Newest first), or Tier.
 - **Server-Side API Pagination**: Fast page transitions through real API pagination (`page` and `page_size`) across both Cards and List views.
 - **Partner Detail & Visual Analytics**:
   - Clicking any partner card or row navigates to the dedicated **Partner Detail View**.
   - **Sticky Sidebar & Ergonomics**: Desktop sidebar remains permanently pinned and accessible during vertical scrolling without page-level horizontal overflow.
-  - **Profile & Relationship Manager**: Verified contact information, office neighborhood, onboarding timestamp, and assigned internal developer sales manager.
+  - **Profile & Relationship Manager**: Verified contact information, office neighborhood, onboarding timestamp, and assigned internal developer sales manager (`@harivishva.com`).
   - **KPI Summary**: 4 primary volume cards (Total Leads, Milestone-Qualified Leads, Completed Site Visits, Confirmed Bookings).
   - **4-Stage Funnel Flow**: Visual progression through *Inbound Leads → Qualified Leads → Visited Prospects → Confirmed Bookings*, highlighting drop-offs and stage conversion ratios.
   - **Visual Analytics Section**:
     - **Partner Funnel Trend (Area Chart)**: 12-month chronological progression comparing valid leads, completed visits, and confirmed unit bookings across 2026.
-    - **Project Booking Contribution (Horizontal Bar Chart)**: Real-time unit closure contribution per developer project, sorted in descending order of confirmed bookings.
+    - **Project Booking Contribution (Horizontal Bar Chart)**: Real-time unit closure contribution per developer project (Skyfinia Phase 1, Skyfinia Phase 2, Infinia Phase 1, Infinia Phase 2), sorted in descending order of confirmed bookings.
   - **Conversion Rates Matrix**: Instant breakdown of Lead Qualification Rate, Visit Completion Rate, Qualified Lead → Visit Rate, Site Visit → Booking Rate, and Overall Conversion Rate.
   - **Bounded Activity Viewports**:
     - **Recent Inbound Leads**: Bounded internal viewport (`max-h-[270px]`) showing the latest 10 inbound customer leads with sticky table headers and internal vertical scrolling.

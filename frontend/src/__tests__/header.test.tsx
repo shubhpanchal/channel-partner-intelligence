@@ -18,6 +18,7 @@ describe("Header Component", () => {
     expect(screen.getByText("Executive Overview")).toBeInTheDocument();
     expect(screen.getByText("Real-time channel metrics")).toBeInTheDocument();
     expect(screen.getByTestId("backend-status-indicator")).toBeInTheDocument();
+    expect(screen.getByTestId("demo-environment-indicator")).toBeInTheDocument();
 
     const toggleBtn = screen.getByTestId("sidebar-toggle-button");
     fireEvent.click(toggleBtn);

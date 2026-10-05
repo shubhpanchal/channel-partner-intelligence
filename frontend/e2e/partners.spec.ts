@@ -52,11 +52,11 @@ test.describe("Channel Partners Portfolio & Analytics (Phase 2C-2)", () => {
     const nextBtn = page.getByTestId("pagination-next-btn");
     await expect(nextBtn).toBeVisible();
     await nextBtn.click();
-    await expect(page.getByTestId("pagination-page-indicator")).toHaveText("Page 2 of 9");
+    await expect(page.getByTestId("pagination-page-indicator")).toHaveText("Page 2 of 2");
 
     const prevBtn = page.getByTestId("pagination-prev-btn");
     await prevBtn.click();
-    await expect(page.getByTestId("pagination-page-indicator")).toHaveText("Page 1 of 9");
+    await expect(page.getByTestId("pagination-page-indicator")).toHaveText("Page 1 of 2");
 
     // 8. Test View Switcher: Toggle to List Mode
     const listModeBtn = page.getByTestId("view-mode-list-btn");

@@ -13,40 +13,40 @@ test.describe("Overview Summary API & Real Dashboard Integration (Phase 2C-1)", 
 
     // Verify Live Stream Banner
     await expect(
-      page.getByText("Live Executive Intelligence Stream")
+      page.getByText("Harivishva Tathawade Portfolio · Executive Intelligence")
     ).toBeVisible({ timeout: 15000 });
 
     // Verify 4 Real KPI Cards rendered with database-backed values
     const activePartnersCard = page.getByTestId("kpi-card-active-partners");
     await expect(activePartnersCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-active-partners")).toHaveText("155");
+    await expect(page.getByTestId("kpi-value-active-partners")).toHaveText("28");
 
     const leadFlowCard = page.getByTestId("kpi-card-lead-flow");
     await expect(leadFlowCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-lead-flow")).toHaveText("3,877");
+    await expect(page.getByTestId("kpi-value-lead-flow")).toHaveText("1,211");
 
     const visitConversionCard = page.getByTestId("kpi-card-visit-conversion");
     await expect(visitConversionCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-visit-conversion")).toHaveText("50.0%");
+    await expect(page.getByTestId("kpi-value-visit-conversion")).toHaveText("55.2%");
 
     const bookingsVelocityCard = page.getByTestId("kpi-card-bookings-velocity");
     await expect(bookingsVelocityCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-bookings-velocity")).toHaveText("456 Units");
+    await expect(page.getByTestId("kpi-value-bookings-velocity")).toHaveText("139 Units");
 
     // Verify Partner Tier Breakdown
     const tierCard = page.getByTestId("card-partner-tier-breakdown");
     await expect(tierCard).toBeVisible();
     await expect(page.getByTestId("tier-row-0")).toContainText("Tier 1 (Elite)");
-    await expect(page.getByTestId("tier-count-0")).toHaveText("18 partners");
-    await expect(page.getByTestId("tier-pct-0")).toHaveText("10.3%");
+    await expect(page.getByTestId("tier-count-0")).toHaveText("6 partners");
+    await expect(page.getByTestId("tier-pct-0")).toHaveText("16.7%");
 
     await expect(page.getByTestId("tier-row-1")).toContainText("Tier 2 (Growth)");
-    await expect(page.getByTestId("tier-count-1")).toHaveText("45 partners");
-    await expect(page.getByTestId("tier-pct-1")).toHaveText("25.7%");
+    await expect(page.getByTestId("tier-count-1")).toHaveText("10 partners");
+    await expect(page.getByTestId("tier-pct-1")).toHaveText("27.8%");
 
     await expect(page.getByTestId("tier-row-2")).toContainText("Tier 3 (Active)");
-    await expect(page.getByTestId("tier-count-2")).toHaveText("112 partners");
-    await expect(page.getByTestId("tier-pct-2")).toHaveText("64.0%");
+    await expect(page.getByTestId("tier-count-2")).toHaveText("20 partners");
+    await expect(page.getByTestId("tier-pct-2")).toHaveText("55.6%");
 
     // Verify Pipeline Velocity & Volume Trends Chart
     await expect(page.getByTestId("chart-pipeline-velocity")).toBeVisible();

@@ -27,38 +27,37 @@ def test_synthetic_data_generator_deterministic_output():
 
 
 def test_synthetic_dataset_target_ranges():
-    """Verify generated counts meet Phase 2B target range requirements."""
+    """Verify generated counts meet Phase 2D target range requirements."""
     data = generate_synthetic_dataset(seed=42)
 
-    assert len(data["projects"]) == 5
-    assert len(data["salespeople"]) == 10
-    assert len(data["channel_partners"]) == 175
+    assert len(data["projects"]) == 4
+    assert len(data["salespeople"]) == 5
+    assert len(data["channel_partners"]) == 36
 
     # Tier breakdown
     t1_count = sum(1 for p in data["channel_partners"] if p["tier"] == PartnerTier.TIER_1.value)
     t2_count = sum(1 for p in data["channel_partners"] if p["tier"] == PartnerTier.TIER_2.value)
     t3_count = sum(1 for p in data["channel_partners"] if p["tier"] == PartnerTier.TIER_3.value)
 
-    assert t1_count == TARGET_PARTNER_DISTRIBUTION[PartnerTier.TIER_1.value]  # 18
-    assert t2_count == TARGET_PARTNER_DISTRIBUTION[PartnerTier.TIER_2.value]  # 45
-    assert t3_count == TARGET_PARTNER_DISTRIBUTION[PartnerTier.TIER_3.value]  # 112
+    assert t1_count == TARGET_PARTNER_DISTRIBUTION[PartnerTier.TIER_1.value]  # 6
+    assert t2_count == TARGET_PARTNER_DISTRIBUTION[PartnerTier.TIER_2.value]  # 10
+    assert t3_count == TARGET_PARTNER_DISTRIBUTION[PartnerTier.TIER_3.value]  # 20
 
-    # Target ranges for leads (3,800-4,200), site visits (1,800-2,200), confirmed bookings (400-500)
-    assert 3800 <= len(data["leads"]) <= 4200
-    assert 1800 <= len(data["site_visits"]) <= 2200
+    # Target ranges for leads (1,200-1,600), site visits (500-900), confirmed bookings (100-160)
+    assert 1200 <= len(data["leads"]) <= 1600
+    assert 500 <= len(data["site_visits"]) <= 900
 
     confirmed_bookings = sum(1 for b in data["bookings"] if b["booking_status"] == "Confirmed")
-    assert 400 <= confirmed_bookings <= 500
+    assert 100 <= confirmed_bookings <= 160
 
 
 def test_partner_archetypes_and_dormant_isolation():
     """Verify that dormant partners have no leads or bookings."""
     data = generate_synthetic_dataset(seed=42)
 
-    # In our generator, Tier 3 has 6 dormant partners (indices 106-111 of T3)
-    # They have active=False
+    # In our generator, Tier 3 has 2 dormant inactive partners (indices 18-19 of T3)
     dormant_partners = [p for p in data["channel_partners"] if not p["active"]]
-    assert len(dormant_partners) == 6
+    assert len(dormant_partners) == 2
 
     dormant_ids = {p["id"] for p in dormant_partners}
     dormant_leads = [ld for ld in data["leads"] if ld["channel_partner_id"] in dormant_ids]
@@ -209,17 +208,17 @@ def test_synthetic_commission_flag():
 def test_seed_database_execution(db_session):
     """Test seeding records into a database session."""
     counts = seed_database(db_session, seed=42)
-    assert counts["projects"] == 5
-    assert counts["salespeople"] == 10
-    assert counts["channel_partners"] == 175
-    assert counts["leads"] >= 3800
+    assert counts["projects"] == 4
+    assert counts["salespeople"] == 5
+    assert counts["channel_partners"] == 36
+    assert counts["leads"] >= 1200
 
     # Verify queryable from DB
     cp_count = db_session.query(ChannelPartner).count()
-    assert cp_count == 175
+    assert cp_count == 36
 
     lead_count = db_session.query(Lead).count()
-    assert lead_count >= 3800
+    assert lead_count >= 1200
 
 
 def test_synthetic_data_date_boundaries():

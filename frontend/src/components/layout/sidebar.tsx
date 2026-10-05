@@ -104,12 +104,12 @@ export function Sidebar({ activeKey, onSelect, isOpen, onClose }: SidebarProps) 
         {/* System Phase Status Indicator */}
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate-500">System Environment</span>
-            <Badge variant="success" className="text-[10px] py-0 px-1.5 font-semibold">
-              Phase 1 Live
+            <span className="text-[11px] font-medium text-slate-500">Demo Environment</span>
+            <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-semibold bg-blue-50 text-blue-700 border-blue-200">
+              Harivishva Demo
             </Badge>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Architecture & Design Foundation</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Tathawade Portfolio · Synthetic Data</p>
         </div>
 
         {/* Navigation List */}

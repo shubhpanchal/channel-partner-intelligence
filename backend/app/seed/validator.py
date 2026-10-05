@@ -84,39 +84,52 @@ def validate_dataset(session: Session) -> ValidationReport:
     # Checks
     report.add_check(
         "Projects Count",
-        projects_count == 5,
-        f"Expected 5, found {projects_count}",
+        projects_count == 4,
+        f"Expected 4, found {projects_count}",
     )
+
+    # Check project families (Skyfinia and Infinia in Tathawade, Pune)
+    projects = session.scalars(select(Project)).all()
+    project_names = [p.name for p in projects]
+    has_skyfinia = any("Skyfinia" in name for name in project_names)
+    has_infinia = any("Infinia" in name for name in project_names)
+    all_pune = all(p.city == "Pune" and p.location == "Tathawade" for p in projects)
+    report.add_check(
+        "Project Families & Geography",
+        has_skyfinia and has_infinia and all_pune and len(projects) == 4,
+        f"Projects: {project_names} in Pune / Tathawade",
+    )
+
     report.add_check(
         "Salespeople Count",
-        salespeople_count == 10,
-        f"Expected 10, found {salespeople_count}",
+        salespeople_count == 5,
+        f"Expected 5, found {salespeople_count}",
     )
     tiers_ok = (
-        partners_count == 175
-        and tier_1_count == 18
-        and tier_2_count == 45
-        and tier_3_count == 112
+        partners_count == 36
+        and tier_1_count == 6
+        and tier_2_count == 10
+        and tier_3_count == 20
     )
     report.add_check(
         "Partners Count & Tiers",
         tiers_ok,
-        f"Total: {partners_count}/175 (T1: {tier_1_count}/18, "
-        f"T2: {tier_2_count}/45, T3: {tier_3_count}/112)",
+        f"Total: {partners_count}/36 (T1: {tier_1_count}/6, "
+        f"T2: {tier_2_count}/10, T3: {tier_3_count}/20)",
     )
     report.add_check(
-        "Leads Range (3800-4200)",
-        3800 <= leads_count <= 4200,
+        "Leads Range (1200-1600)",
+        1200 <= leads_count <= 1600,
         f"Total leads: {leads_count}",
     )
     report.add_check(
-        "Site Visits Range (1800-2200)",
-        1800 <= visits_count <= 2200,
+        "Site Visits Range (500-900)",
+        500 <= visits_count <= 900,
         f"Total site visits: {visits_count}",
     )
     report.add_check(
-        "Confirmed Bookings Range (400-500)",
-        400 <= confirmed_bookings <= 500,
+        "Confirmed Bookings Range (100-160)",
+        100 <= confirmed_bookings <= 160,
         f"Confirmed bookings: {confirmed_bookings} (Total: {bookings_count})",
     )
 
@@ -312,6 +325,31 @@ def validate_dataset(session: Session) -> ValidationReport:
         "Direct Bookings Present",
         len(direct_confirmed) > 0,
         f"Found {len(direct_confirmed)} direct bookings without completed visits",
+    )
+
+    # 7. Partner / Project Affinity Check
+    sky_proj_ids = {p.id for p in projects if "Skyfinia" in p.name}
+    inf_proj_ids = {p.id for p in projects if "Infinia" in p.name}
+    sky_specialists = 0
+    inf_specialists = 0
+
+    partner_leads_map: Dict[str, List[str]] = {}
+    for ld in leads:
+        partner_leads_map.setdefault(ld.channel_partner_id, []).append(ld.project_id)
+
+    for p_id, p_pids in partner_leads_map.items():
+        if len(p_pids) >= 15:
+            sky_ratio = sum(1 for pid in p_pids if pid in sky_proj_ids) / len(p_pids)
+            inf_ratio = sum(1 for pid in p_pids if pid in inf_proj_ids) / len(p_pids)
+            if sky_ratio >= 0.70:
+                sky_specialists += 1
+            if inf_ratio >= 0.70:
+                inf_specialists += 1
+
+    report.add_check(
+        "Partner Project Affinity",
+        sky_specialists >= 1 and inf_specialists >= 1,
+        f"Found {sky_specialists} Skyfinia specialists and {inf_specialists} Infinia specialists",
     )
 
     # Calculate Funnel Metrics

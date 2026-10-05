@@ -70,6 +70,15 @@ export function Header({ title, subtitle, onOpenSidebar }: HeaderProps) {
           />
         </div>
 
+        {/* Subtle Persistent Demo Environment Indicator */}
+        <div
+          data-testid="demo-environment-indicator"
+          className="hidden lg:flex items-center space-x-1.5 rounded-full bg-slate-100/90 border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-2xs"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+          <span>Demo Environment · Synthetic Data</span>
+        </div>
+
         {/* Backend Connectivity Indicator */}
         <TooltipProvider>
           <Tooltip>

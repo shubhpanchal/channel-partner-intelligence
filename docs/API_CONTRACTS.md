@@ -42,82 +42,82 @@ Retrieves consolidated executive indicators, velocity trends, partner tier distr
 {
   "kpis": {
     "active_partners": {
-      "value": 152,
+      "value": 28,
       "growth_pct": null,
       "breakdown": {
-        "tier_1": 18,
-        "tier_2": 40,
-        "tier_3": 94
+        "tier_1": 6,
+        "tier_2": 8,
+        "tier_3": 14
       }
     },
     "channel_lead_flow": {
-      "value": 3906,
-      "total_leads": 4018,
-      "valid_leads": 3906,
-      "qualified_leads": 2891,
-      "qualification_rate_pct": 74.01,
+      "value": 1211,
+      "total_leads": 1230,
+      "valid_leads": 1211,
+      "qualified_leads": 919,
+      "qualification_rate_pct": 75.89,
       "growth_pct": null
     },
     "site_visits": {
-      "total_scheduled": 2010,
-      "total_completed": 1743,
-      "visit_completion_rate_pct": 86.72,
-      "unique_visited_leads": 1472,
-      "qualified_lead_to_visit_rate_pct": 50.92,
+      "total_scheduled": 704,
+      "total_completed": 606,
+      "visit_completion_rate_pct": 86.08,
+      "unique_visited_leads": 507,
+      "qualified_lead_to_visit_rate_pct": 55.17,
       "growth_pct": null
     },
     "bookings_velocity": {
-      "units_count": 454,
-      "confirmed_bookings": 454,
-      "confirmed_from_visited_leads": 440,
-      "direct_confirmed_bookings": 14,
-      "total_value_inr": 4385100000.0,
-      "visit_to_booking_rate_pct": 29.89,
-      "overall_conversion_rate_pct": 11.62,
+      "units_count": 139,
+      "confirmed_bookings": 139,
+      "confirmed_from_visited_leads": 129,
+      "direct_confirmed_bookings": 10,
+      "total_value_inr": 1236100000.0,
+      "visit_to_booking_rate_pct": 25.44,
+      "overall_conversion_rate_pct": 11.48,
       "growth_pct": null
     }
   },
   "tier_breakdown": [
     {
       "tier": "Tier 1 (Elite)",
-      "partners_count": 18,
-      "percentage": 10.3,
-      "contribution": "10.3%"
+      "partners_count": 6,
+      "percentage": 16.7,
+      "contribution": "16.7%"
     },
     {
       "tier": "Tier 2 (Growth)",
-      "partners_count": 45,
-      "percentage": 25.7,
-      "contribution": "25.7%"
+      "partners_count": 10,
+      "percentage": 27.8,
+      "contribution": "27.8%"
     },
     {
       "tier": "Tier 3 (Active)",
-      "partners_count": 112,
-      "percentage": 64.0,
-      "contribution": "64.0%"
+      "partners_count": 20,
+      "percentage": 55.6,
+      "contribution": "55.6%"
     }
   ],
   "monthly_trends": [
     {
       "month": "Jan",
-      "leads": 353,
-      "site_visits": 152,
-      "bookings": 41
+      "leads": 108,
+      "site_visits": 52,
+      "bookings": 12
     },
     {
       "month": "Feb",
-      "leads": 312,
-      "site_visits": 139,
-      "bookings": 36
+      "leads": 98,
+      "site_visits": 48,
+      "bookings": 11
     }
   ],
   "recent_activities": [
     {
       "id": "act-e89c...",
-      "partner_name": "Apex Realty Advisory",
-      "action": "Conducted completed site visit for lead LD-2024-8891",
-      "logged_at": "2027-01-21T18:24:00Z",
-      "time_ago": "12m ago",
+      "partner_name": "Apex Realty Partners",
+      "action": "Conducted completed site visit for lead LD-2026-0842 at Skyfinia Phase 1",
+      "logged_at": "2026-12-28T18:24:00Z",
+      "time_ago": "3d ago",
       "status": "success",
       "tag": "Site Visit"
     }
@@ -126,7 +126,7 @@ Retrieves consolidated executive indicators, velocity trends, partner tier distr
     {
       "id": "alert-direct-bookings",
       "title": "Direct Bookings Detected",
-      "description": "14 confirmed bookings occurred directly without prior completed site visit.",
+      "description": "10 confirmed bookings occurred directly without prior completed site visit.",
       "severity": "info"
     }
   ]
@@ -171,20 +171,20 @@ Lists registered channel partners with pagination, tier filters, status filters,
         "name": "Rohit Deshmukh"
       },
       "summary_stats": {
-        "total_leads": 340,
-        "qualified_leads": 280,
-        "completed_visits": 142,
-        "confirmed_bookings": 38,
-        "visit_to_booking_rate_pct": 26.76,
-        "overall_conversion_rate_pct": 11.18
+        "total_leads": 120,
+        "qualified_leads": 95,
+        "completed_visits": 58,
+        "confirmed_bookings": 16,
+        "visit_to_booking_rate_pct": 27.59,
+        "overall_conversion_rate_pct": 13.33
       }
     }
   ],
   "pagination": {
-    "total": 175,
+    "total": 36,
     "page": 1,
     "page_size": 20,
-    "total_pages": 9
+    "total_pages": 2
   }
 }
 ```
@@ -211,47 +211,52 @@ Retrieves detailed profile, assigned sales manager, and comprehensive performanc
   "assigned_salesperson": {
     "id": "sp-101",
     "name": "Rohit Deshmukh",
-    "email": "rohit.d@hariwishwa.com",
-    "phone": "+919823098765"
+    "email": "rohit.deshmukh@harivishva.com",
+    "phone": "+919822011111"
   },
   "metrics": {
-    "total_leads": 340,
-    "qualified_leads": 280,
-    "qualification_rate_pct": 82.35,
-    "scheduled_site_visits": 170,
-    "completed_site_visits": 142,
-    "visit_completion_rate_pct": 83.53,
-    "unique_visited_leads": 142,
-    "qualified_lead_to_visit_rate_pct": 50.71,
-    "confirmed_bookings": 38,
-    "visit_to_booking_rate_pct": 26.76,
-    "overall_conversion_rate_pct": 11.18,
-    "gross_booking_value_inr": 385000000.00
+    "total_leads": 120,
+    "qualified_leads": 95,
+    "qualification_rate_pct": 79.17,
+    "scheduled_site_visits": 68,
+    "completed_site_visits": 58,
+    "visit_completion_rate_pct": 85.29,
+    "unique_visited_leads": 58,
+    "qualified_lead_to_visit_rate_pct": 61.05,
+    "confirmed_bookings": 16,
+    "visit_to_booking_rate_pct": 27.59,
+    "overall_conversion_rate_pct": 13.33,
+    "gross_booking_value_inr": 145000000.00
   },
   "monthly_trends": [
     {
       "month": "Jan",
-      "leads": 28,
-      "completed_visits": 12,
-      "bookings": 3
+      "leads": 12,
+      "completed_visits": 6,
+      "bookings": 2
     },
     {
       "month": "Feb",
-      "leads": 25,
-      "completed_visits": 10,
-      "bookings": 2
+      "leads": 10,
+      "completed_visits": 5,
+      "bookings": 1
     }
   ],
   "project_contribution": [
     {
-      "project_id": "prj-101",
-      "project_name": "Solaris Residences",
-      "bookings": 18
+      "project_id": "prj-sky-p1",
+      "project_name": "Skyfinia Phase 1",
+      "bookings": 9
     },
     {
-      "project_id": "prj-102",
-      "project_name": "Urban Oasis",
-      "bookings": 12
+      "project_id": "prj-sky-p2",
+      "project_name": "Skyfinia Phase 2",
+      "bookings": 5
+    },
+    {
+      "project_id": "prj-inf-p1",
+      "project_name": "Infinia Phase 1",
+      "bookings": 2
     }
   ],
   "recent_leads": [],
@@ -275,25 +280,25 @@ Lists developer project portfolio and unit inventory status.
 {
   "items": [
     {
-      "id": "prj-101",
-      "project_code": "PRJ-SOLARIS",
-      "name": "Solaris Residences",
+      "id": "prj-sky-p1",
+      "project_code": "PRJ-SKY-P1",
+      "name": "Skyfinia Phase 1",
       "project_type": "Residential",
-      "location": "Kharadi",
+      "location": "Tathawade",
       "city": "Pune",
       "status": "Active",
       "launch_date": "2025-06-01",
-      "target_units": 450,
-      "available_units": 185,
-      "starting_price": 8500000.00,
+      "target_units": 320,
+      "available_units": 140,
+      "starting_price": 8800000.00,
       "summary_stats": {
-        "leads_count": 1250,
-        "visits_count": 580,
-        "bookings_count": 142
+        "leads_count": 480,
+        "visits_count": 240,
+        "bookings_count": 55
       }
     }
   ],
-  "total": 5
+  "total": 4
 }
 ```
 
