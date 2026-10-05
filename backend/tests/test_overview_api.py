@@ -100,36 +100,36 @@ def test_overview_summary_canonical_seed_42_values(seeded_client: TestClient):
 
     # 1. Lead Flow Metrics
     lead_flow = kpis["channel_lead_flow"]
-    assert lead_flow["total_leads"] == 4018
-    assert lead_flow["valid_leads"] == 3906
-    assert lead_flow["value"] == 3906
-    assert lead_flow["qualified_leads"] == 2891
-    assert lead_flow["qualification_rate_pct"] == 74.01
+    assert lead_flow["total_leads"] == 3989
+    assert lead_flow["valid_leads"] == 3877
+    assert lead_flow["value"] == 3877
+    assert lead_flow["qualified_leads"] == 2883
+    assert lead_flow["qualification_rate_pct"] == 74.36
 
     # 2. Site Visit Metrics
     site_visits = kpis["site_visits"]
-    assert site_visits["total_scheduled"] == 2010
-    assert site_visits["total_completed"] == 1743
-    assert site_visits["visit_completion_rate_pct"] == 86.72
-    assert site_visits["unique_visited_leads"] == 1472
-    assert site_visits["qualified_lead_to_visit_rate_pct"] == 50.92
+    assert site_visits["total_scheduled"] == 1951
+    assert site_visits["total_completed"] == 1690
+    assert site_visits["visit_completion_rate_pct"] == 86.62
+    assert site_visits["unique_visited_leads"] == 1442
+    assert site_visits["qualified_lead_to_visit_rate_pct"] == 50.02
 
     # 3. Bookings Velocity Metrics
     bookings = kpis["bookings_velocity"]
-    assert bookings["units_count"] == 454
-    assert bookings["confirmed_bookings"] == 454
+    assert bookings["units_count"] == 456
+    assert bookings["confirmed_bookings"] == 456
     assert bookings["confirmed_from_visited_leads"] == 440
-    assert bookings["direct_confirmed_bookings"] == 14
-    assert bookings["visit_to_booking_rate_pct"] == 29.89
-    assert bookings["overall_conversion_rate_pct"] == 11.62
+    assert bookings["direct_confirmed_bookings"] == 16
+    assert bookings["visit_to_booking_rate_pct"] == 30.51
+    assert bookings["overall_conversion_rate_pct"] == 11.76
     assert bookings["total_value_inr"] > 4_000_000_000.00
 
     # 4. Active Partners & Trailing-90-Day Breakdown
     active_partners = kpis["active_partners"]
-    assert active_partners["value"] == 152
+    assert active_partners["value"] == 155
     assert active_partners["breakdown"]["tier_1"] == 18
     assert active_partners["breakdown"]["tier_2"] == 40
-    assert active_partners["breakdown"]["tier_3"] == 94
+    assert active_partners["breakdown"]["tier_3"] == 97
 
     # 5. Partner Tier Distribution (All 175 registered partners)
     tier_breakdown = data["tier_breakdown"]
@@ -152,7 +152,7 @@ def test_overview_summary_canonical_seed_42_values(seeded_client: TestClient):
 
     # 6. Monthly Trends
     monthly_trends = data["monthly_trends"]
-    assert len(monthly_trends) >= 12
+    assert len(monthly_trends) == 12
     jan = monthly_trends[0]
     assert jan["month"] == "Jan"
     assert jan["leads"] > 0
@@ -169,6 +169,12 @@ def test_overview_summary_canonical_seed_42_values(seeded_client: TestClient):
     assert "time_ago" in recent_activities[0]
     assert "status" in recent_activities[0]
     assert "tag" in recent_activities[0]
+
+    # Verify recent activities do not exceed 2026-12-31 23:59:59
+    for act in recent_activities:
+        dt = datetime.fromisoformat(act["logged_at"])
+        assert dt <= datetime(2026, 12, 31, 23, 59, 59)
+        assert dt >= datetime(2026, 1, 1, 0, 0, 0)
 
 
 # ==============================================================================
@@ -189,7 +195,7 @@ def test_milestone_qualification_preservation(seeded_db_session: Session):
     assert lost_qualified > 0, "Expected some leads to be lost after historical qualification"
 
     summary = get_overview_summary(seeded_db_session)
-    assert summary.kpis.channel_lead_flow.qualified_leads == 2891
+    assert summary.kpis.channel_lead_flow.qualified_leads == 2883
 
 
 def test_invalid_leads_excluded_from_valid_count(seeded_db_session: Session):
@@ -200,7 +206,7 @@ def test_invalid_leads_excluded_from_valid_count(seeded_db_session: Session):
         .count()
     )
     assert invalid_count == 112
-    assert 4018 - invalid_count == 3906
+    assert 3989 - invalid_count == 3877
 
 
 def test_direct_bookings_excluded_from_visit_to_booking_rate(seeded_db_session: Session):
@@ -208,12 +214,11 @@ def test_direct_bookings_excluded_from_visit_to_booking_rate(seeded_db_session: 
     from app.services.overview_service import get_overview_summary
 
     summary = get_overview_summary(seeded_db_session)
-    # Direct bookings = 14, Confirmed from visited = 440, Unique visited leads = 1472
-    # Visit -> Booking Rate = 440 / 1472 * 100 = 29.89%
-    # If direct were included: (440 + 14) / 1472 = 30.84% (distortion!)
-    assert summary.kpis.bookings_velocity.direct_confirmed_bookings == 14
+    # Direct bookings = 16, Confirmed from visited = 440, Unique visited leads = 1442
+    # Visit -> Booking Rate = 440 / 1442 * 100 = 30.51%
+    assert summary.kpis.bookings_velocity.direct_confirmed_bookings == 16
     assert summary.kpis.bookings_velocity.confirmed_from_visited_leads == 440
-    assert summary.kpis.bookings_velocity.visit_to_booking_rate_pct == 29.89
+    assert summary.kpis.bookings_velocity.visit_to_booking_rate_pct == 30.51
 
 
 # ==============================================================================
@@ -229,7 +234,7 @@ def test_project_filter(seeded_client: TestClient):
 
     kpis = data["kpis"]
     lead_flow = kpis["channel_lead_flow"]
-    assert lead_flow["total_leads"] < 4018
+    assert lead_flow["total_leads"] < 3989
     assert lead_flow["total_leads"] > 0
     assert kpis["bookings_velocity"]["units_count"] > 0
 
@@ -253,7 +258,7 @@ def test_date_range_filter(seeded_client: TestClient):
 
     kpis = data["kpis"]
     # H1 leads should be less than full year
-    assert kpis["channel_lead_flow"]["total_leads"] < 4018
+    assert kpis["channel_lead_flow"]["total_leads"] < 3989
     assert kpis["channel_lead_flow"]["total_leads"] > 0
 
 

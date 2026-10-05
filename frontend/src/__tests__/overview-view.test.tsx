@@ -82,7 +82,7 @@ const MOCK_OVERVIEW_DATA: OverviewSummaryResponse = {
       id: "act-1",
       partner_name: "Apex Real Estate Advisors",
       action: "Booking confirmed for Rajesh Kale.",
-      logged_at: "2027-01-21T13:51:00Z",
+      logged_at: "2026-12-31T23:51:00Z",
       time_ago: "2h ago",
       status: "success",
       tag: "Booking",
@@ -91,8 +91,8 @@ const MOCK_OVERVIEW_DATA: OverviewSummaryResponse = {
       id: "act-2",
       partner_name: "Horizon Property Consultants",
       action: "Site visit completed for Siddharth More.",
-      logged_at: "2027-01-10T03:59:00Z",
-      time_ago: "11d ago",
+      logged_at: "2026-12-31T23:45:00Z",
+      time_ago: "11m ago",
       status: "success",
       tag: "Site Visit",
     },
@@ -256,5 +256,50 @@ describe("OverviewView Component", () => {
     expect(
       screen.getByText("Solaris Residences has only 12 units (2.7%) remaining in sales inventory.")
     ).toBeInTheDocument();
+  });
+
+  it("renders bounded-height activity viewport with fixed header and preserved View Log action", () => {
+    const multiRowActivities = Array.from({ length: 10 }, (_, i) => ({
+      id: `act-${i + 1}`,
+      partner_name: `Partner Agency ${i + 1}`,
+      action: `Lead submitted for Project ${i + 1}`,
+      logged_at: `2026-12-${20 + (i % 10)}T10:00:00Z`,
+      time_ago: `${i + 1}h ago`,
+      status: "info" as const,
+      tag: "Lead Batch",
+    }));
+
+    const extendedData = {
+      ...MOCK_OVERVIEW_DATA,
+      recent_activities: multiRowActivities,
+    };
+
+    vi.spyOn(overviewHook, "useOverviewSummary").mockReturnValue({
+      data: extendedData,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    render(<OverviewView />);
+
+    // 1. Verify Card and View Log action
+    const card = screen.getByTestId("card-recent-activity");
+    expect(card).toBeInTheDocument();
+    const viewLogBtn = screen.getByRole("button", { name: /View Log/i });
+    expect(viewLogBtn).toBeInTheDocument();
+
+    // 2. Verify Viewport Container structure & bounded scroll properties
+    const viewport = screen.getByTestId("recent-activity-viewport");
+    expect(viewport).toBeInTheDocument();
+    expect(viewport.className).toContain("overflow-y-auto");
+    expect(viewport.className).toContain("max-h-");
+
+    // 3. Verify all 10 activity rows are mounted inside viewport
+    for (let i = 1; i <= 10; i++) {
+      expect(screen.getByTestId(`activity-row-act-${i}`)).toBeInTheDocument();
+      expect(screen.getByText(`Partner Agency ${i}`)).toBeInTheDocument();
+    }
   });
 });

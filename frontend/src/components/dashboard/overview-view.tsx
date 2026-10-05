@@ -439,8 +439,8 @@ export function OverviewView({ filters }: OverviewViewProps = {}) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Recent Activity Table */}
         <motion.div variants={itemVariants} className="lg:col-span-2">
-          <Card className="shadow-sm" data-testid="card-recent-activity">
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="shadow-sm flex flex-col" data-testid="card-recent-activity">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
                 <CardTitle>Recent Channel Activity</CardTitle>
                 <CardDescription>
@@ -451,51 +451,56 @@ export function OverviewView({ filters }: OverviewViewProps = {}) {
                 View Log <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0 pb-3 px-4">
               {recent_activities.length === 0 ? (
                 <div className="py-8 text-center text-xs text-muted-foreground">
                   No recent partner activities found.
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[180px]">Partner</TableHead>
-                      <TableHead>Event</TableHead>
-                      <TableHead className="w-[110px]">Type</TableHead>
-                      <TableHead className="text-right w-[90px]">Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recent_activities.map((act) => (
-                      <TableRow key={act.id} data-testid={`activity-row-${act.id}`}>
-                        <TableCell className="font-semibold text-xs text-slate-900">
-                          {act.partner_name}
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-600">
-                          {act.action}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              act.status === "success"
-                                ? "success"
-                                : act.status === "info"
-                                ? "info"
-                                : "neutral"
-                            }
-                            className="text-[10px] py-0 px-1.5"
-                          >
-                            {act.tag}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right text-xs text-muted-foreground">
-                          {act.time_ago}
-                        </TableCell>
+                <div
+                  className="max-h-[270px] overflow-y-auto overflow-x-auto rounded-md border border-slate-100"
+                  data-testid="recent-activity-viewport"
+                >
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-slate-50/95 backdrop-blur-sm z-10 shadow-sm border-b">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-[180px] text-xs font-semibold text-slate-700 bg-slate-50/95">Partner</TableHead>
+                        <TableHead className="text-xs font-semibold text-slate-700 bg-slate-50/95">Event</TableHead>
+                        <TableHead className="w-[110px] text-xs font-semibold text-slate-700 bg-slate-50/95">Type</TableHead>
+                        <TableHead className="text-right w-[90px] text-xs font-semibold text-slate-700 bg-slate-50/95">Time</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {recent_activities.map((act) => (
+                        <TableRow key={act.id} data-testid={`activity-row-${act.id}`} className="hover:bg-slate-50/60">
+                          <TableCell className="font-semibold text-xs text-slate-900 break-words align-top">
+                            {act.partner_name}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-600 break-words align-top">
+                            {act.action}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <Badge
+                              variant={
+                                act.status === "success"
+                                  ? "success"
+                                  : act.status === "info"
+                                  ? "info"
+                                  : "neutral"
+                              }
+                              className="text-[10px] py-0 px-1.5 whitespace-nowrap"
+                            >
+                              {act.tag}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap align-top">
+                            {act.time_ago}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

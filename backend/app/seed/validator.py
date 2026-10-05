@@ -13,7 +13,7 @@ Validates:
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List
 
 from sqlalchemy import func, select
@@ -211,6 +211,57 @@ def validate_dataset(session: Session) -> ValidationReport:
         "Temporal Order Consistency",
         len(temporal_errors) == 0,
         f"Found {len(temporal_errors)} temporal violations",
+    )
+
+    # 4b. Canonical Dataset Date Boundary (2026-01-01 00:00:00 to 2026-12-31 23:59:59)
+    min_bound_dt = datetime(2026, 1, 1, 0, 0, 0)
+    max_bound_dt = datetime(2026, 12, 31, 23, 59, 59)
+    min_bound_date = date(2026, 1, 1)
+    max_bound_date = date(2026, 12, 31)
+
+    boundary_errors: List[str] = []
+    for ld in leads:
+        for fld_name, dt_val in [
+            ("created_at", ld.created_at),
+            ("qualified_at", ld.qualified_at),
+            ("converted_at", ld.converted_at),
+            ("lost_at", ld.lost_at),
+        ]:
+            if dt_val is not None and not (min_bound_dt <= dt_val <= max_bound_dt):
+                boundary_errors.append(f"Lead {ld.id} {fld_name} ({dt_val}) outside 2026 boundary")
+
+    for v in visits:
+        for fld_name, dt_val in [
+            ("created_at", v.created_at),
+            ("scheduled_at", v.scheduled_at),
+            ("visited_at", v.visited_at),
+        ]:
+            if dt_val is not None and not (min_bound_dt <= dt_val <= max_bound_dt):
+                boundary_errors.append(
+                    f"SiteVisit {v.id} {fld_name} ({dt_val}) outside 2026 boundary"
+                )
+
+    for b in all_bookings:
+        if b.created_at is not None and not (min_bound_dt <= b.created_at <= max_bound_dt):
+            boundary_errors.append(
+                f"Booking {b.id} created_at ({b.created_at}) outside 2026 boundary"
+            )
+        if b.booking_date is not None and not (min_bound_date <= b.booking_date <= max_bound_date):
+            boundary_errors.append(
+                f"Booking {b.id} booking_date ({b.booking_date}) outside 2026 boundary"
+            )
+
+    activities = session.scalars(select(PartnerActivity)).all()
+    for act in activities:
+        if act.logged_at is not None and not (min_bound_dt <= act.logged_at <= max_bound_dt):
+            boundary_errors.append(
+                f"PartnerActivity {act.id} logged_at ({act.logged_at}) outside 2026 boundary"
+            )
+
+    report.add_check(
+        "Canonical Dataset Date Boundary",
+        len(boundary_errors) == 0,
+        f"Found {len(boundary_errors)} records outside 2026 boundary",
     )
 
     # 5. Active Booking Invariant

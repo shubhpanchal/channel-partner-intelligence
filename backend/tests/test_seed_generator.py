@@ -1,4 +1,4 @@
-"""Tests for deterministic synthetic data generation and lifecycle semantics."""
+from datetime import timedelta
 
 from app.models import ChannelPartner, Lead, LeadStatus, PartnerTier
 from app.seed.constants import TARGET_PARTNER_DISTRIBUTION
@@ -220,3 +220,45 @@ def test_seed_database_execution(db_session):
 
     lead_count = db_session.query(Lead).count()
     assert lead_count >= 3800
+
+
+def test_synthetic_data_date_boundaries():
+    """Verify all generated temporal records are strictly within 2026-01-01 and 2026-12-31."""
+    from datetime import date, datetime
+
+    min_dt = datetime(2026, 1, 1, 0, 0, 0)
+    max_dt = datetime(2026, 12, 31, 23, 59, 59)
+    min_date = date(2026, 1, 1)
+    max_date = date(2026, 12, 31)
+
+    data = generate_synthetic_dataset(seed=42)
+
+    # Leads
+    for lead in data["leads"]:
+        assert min_dt <= lead["created_at"] <= max_dt
+        if lead["qualified_at"] is not None:
+            assert min_dt <= lead["qualified_at"] <= max_dt
+            assert lead["qualified_at"] >= lead["created_at"]
+        if lead["converted_at"] is not None:
+            assert min_dt <= lead["converted_at"] <= max_dt
+            assert lead["converted_at"] >= lead["created_at"]
+        if lead["lost_at"] is not None:
+            assert min_dt <= lead["lost_at"] <= max_dt
+            assert lead["lost_at"] >= lead["created_at"]
+
+    # Site visits
+    for sv in data["site_visits"]:
+        assert min_dt <= sv["created_at"] <= max_dt
+        assert min_dt <= sv["scheduled_at"] <= max_dt
+        if sv["visited_at"] is not None:
+            assert min_dt <= sv["visited_at"] <= max_dt
+            assert sv["visited_at"] >= sv["scheduled_at"] - timedelta(minutes=1)
+
+    # Bookings
+    for bk in data["bookings"]:
+        assert min_dt <= bk["created_at"] <= max_dt
+        assert min_date <= bk["booking_date"] <= max_date
+
+    # Partner activities
+    for act in data["partner_activities"]:
+        assert min_dt <= act["logged_at"] <= max_dt

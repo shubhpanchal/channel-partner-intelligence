@@ -19,19 +19,19 @@ test.describe("Overview Summary API & Real Dashboard Integration (Phase 2C-1)", 
     // Verify 4 Real KPI Cards rendered with database-backed values
     const activePartnersCard = page.getByTestId("kpi-card-active-partners");
     await expect(activePartnersCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-active-partners")).toHaveText("152");
+    await expect(page.getByTestId("kpi-value-active-partners")).toHaveText("155");
 
     const leadFlowCard = page.getByTestId("kpi-card-lead-flow");
     await expect(leadFlowCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-lead-flow")).toHaveText("3,906");
+    await expect(page.getByTestId("kpi-value-lead-flow")).toHaveText("3,877");
 
     const visitConversionCard = page.getByTestId("kpi-card-visit-conversion");
     await expect(visitConversionCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-visit-conversion")).toHaveText("50.9%");
+    await expect(page.getByTestId("kpi-value-visit-conversion")).toHaveText("50.0%");
 
     const bookingsVelocityCard = page.getByTestId("kpi-card-bookings-velocity");
     await expect(bookingsVelocityCard).toBeVisible();
-    await expect(page.getByTestId("kpi-value-bookings-velocity")).toHaveText("454 Units");
+    await expect(page.getByTestId("kpi-value-bookings-velocity")).toHaveText("456 Units");
 
     // Verify Partner Tier Breakdown
     const tierCard = page.getByTestId("card-partner-tier-breakdown");
@@ -51,10 +51,18 @@ test.describe("Overview Summary API & Real Dashboard Integration (Phase 2C-1)", 
     // Verify Pipeline Velocity & Volume Trends Chart
     await expect(page.getByTestId("chart-pipeline-velocity")).toBeVisible();
 
-    // Verify Recent Channel Activity Table
+    // Verify Recent Channel Activity Table & Bounded Viewport
     const activityCard = page.getByTestId("card-recent-activity");
     await expect(activityCard).toBeVisible();
     await expect(page.getByText("Recent Channel Activity")).toBeVisible();
+    await expect(page.getByRole("button", { name: /View Log/i })).toBeVisible();
+
+    const viewport = page.getByTestId("recent-activity-viewport");
+    await expect(viewport).toBeVisible();
+
+    // Verify no 2027 dates in activity table
+    const pageContent = await page.content();
+    expect(pageContent).not.toContain("2027");
 
     // Verify Attention Center
     await expect(page.getByTestId("card-attention-center")).toBeVisible();

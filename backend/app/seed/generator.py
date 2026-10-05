@@ -197,7 +197,30 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
 
     # Historical timeline: 2026-01-01 to 2026-12-31
     base_start_date = datetime(2026, 1, 1, 9, 0, 0)
+    max_boundary_dt = datetime(2026, 12, 31, 23, 59, 59)
     days_in_year = 365
+
+    def advance_dt(
+        current_dt: datetime,
+        min_seconds: int,
+        max_seconds: int,
+    ) -> datetime:
+        """Safely advance datetime ensuring it never exceeds max_boundary_dt."""
+        if current_dt >= max_boundary_dt:
+            return max_boundary_dt
+        rem_seconds = int((max_boundary_dt - current_dt).total_seconds())
+        if rem_seconds <= 60:
+            return max_boundary_dt
+        desired_seconds = rng.randint(min_seconds, max_seconds)
+        if desired_seconds >= rem_seconds:
+            scaled = int(rem_seconds * rng.uniform(0.35, 0.85))
+            actual_seconds = max(60 if rem_seconds > 120 else 1, min(scaled, rem_seconds))
+        else:
+            actual_seconds = desired_seconds
+        next_dt = current_dt + timedelta(seconds=actual_seconds)
+        if next_dt > max_boundary_dt:
+            next_dt = max_boundary_dt
+        return next_dt
 
     # Project lookup for configuration & pricing
     project_lookup = {p["id"]: p for p in projects}
@@ -250,6 +273,10 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                 hours=rng.randint(0, 8),
                 minutes=rng.randint(0, 59),
             )
+            if created_at > max_boundary_dt - timedelta(hours=6):
+                created_at = max_boundary_dt - timedelta(
+                    hours=rng.randint(6, 18), minutes=rng.randint(0, 59)
+                )
 
             # Assign project
             if archetype == "boutique_luxury":
@@ -296,21 +323,21 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                 qualified_at = None
                 converted_at = None
                 if status == "Lost":
-                    lost_at = created_at + timedelta(days=rng.randint(1, 10))
+                    lost_at = advance_dt(created_at, 86400 * 1, 86400 * 10)
                     lost_reason = rng.choice(["Budget Mismatch", "Location Unsuitable"])
                 else:
                     lost_at = None
                     lost_reason = None
             else:
                 # Lead is Qualified!
-                qualified_at = created_at + timedelta(hours=rng.randint(1, 36))
+                qualified_at = advance_dt(created_at, 3600 * 1, 3600 * 36)
                 # Next stage decisions
                 # Check for direct booking without site visit (~0.8% of qualified leads)
                 is_direct_booking = rng.random() < 0.008
 
                 if is_direct_booking:
                     status = "Converted"
-                    converted_at = qualified_at + timedelta(days=rng.randint(2, 12))
+                    converted_at = advance_dt(qualified_at, 86400 * 2, 86400 * 12)
                     lost_at = None
                     lost_reason = None
                 else:
@@ -328,7 +355,7 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                         else:
                             status = "Lost"
                             converted_at = None
-                            lost_at = qualified_at + timedelta(days=rng.randint(5, 25))
+                            lost_at = advance_dt(qualified_at, 86400 * 5, 86400 * 25)
                             lost_reason = rng.choice(LOST_REASONS)
                     else:
                         status = "Site Visit Scheduled"
@@ -424,16 +451,21 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
 
             # Handle Site Visit Lifecycle for scheduled visits
             if status == "Site Visit Scheduled":
-                visit_sched_at = qualified_at + timedelta(
-                    days=rng.randint(1, 10),
-                    hours=rng.randint(10, 16),
-                )
+                raw_sched = advance_dt(qualified_at, 86400 * 1, 86400 * 10)
+                target_hour = rng.randint(10, 16)
+                target_min = rng.randint(0, 59)
+                candidate_sched = raw_sched.replace(hour=target_hour, minute=target_min, second=0)
+                if candidate_sched <= qualified_at:
+                    candidate_sched = advance_dt(qualified_at, 3600 * 2, 3600 * 6)
+                if candidate_sched > max_boundary_dt:
+                    candidate_sched = max_boundary_dt - timedelta(minutes=rng.randint(30, 180))
+                visit_sched_at = candidate_sched
 
                 # Visit execution outcome probability
                 visit_status_roll = rng.random()
                 if visit_status_roll < 0.835:
                     sv_status = "Completed"
-                    visited_at = visit_sched_at + timedelta(minutes=rng.randint(5, 30))
+                    visited_at = advance_dt(visit_sched_at, 300, 1800)
                     outcome_roll = rng.random()
                     if outcome_roll < 0.40:
                         outcome = "Positive / Intent to Book"
@@ -454,6 +486,10 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
 
                 visit_id = f"sv-{visit_id_counter:06d}"
                 visit_code = f"SV-2026-{visit_id_counter:06d}"
+                visit_created_at = max(
+                    qualified_at,
+                    visit_sched_at - timedelta(hours=rng.randint(1, 12)),
+                )
 
                 site_visits.append({
                     "id": visit_id,
@@ -470,7 +506,7 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                     ]),
                     "outcome": outcome,
                     "feedback_notes": f"Site visit for {customer_name} at {proj_tmpl['name']}.",
-                    "created_at": visit_sched_at - timedelta(hours=rng.randint(1, 12)),
+                    "created_at": visit_created_at,
                 })
                 visit_id_counter += 1
 
@@ -492,10 +528,22 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                 # If completed, check for multiple visits (re-visit)
                 if sv_status == "Completed":
                     lead_record["status"] = "Site Visit Completed"
+                    last_visited_dt = visited_at
 
                     # ~20% chance of a second visit
                     if rng.random() < 0.20:
-                        revisit_sched = visited_at + timedelta(days=rng.randint(3, 10))
+                        revisit_sched_raw = advance_dt(visited_at, 86400 * 3, 86400 * 10)
+                        if revisit_sched_raw <= max_boundary_dt:
+                            revisit_sched = revisit_sched_raw
+                        else:
+                            revisit_sched = max_boundary_dt - timedelta(
+                                minutes=rng.randint(30, 90)
+                            )
+                        if revisit_sched <= visited_at:
+                            revisit_sched = advance_dt(visited_at, 1800, 7200)
+                        revisit_visited = advance_dt(revisit_sched, 600, 1500)
+                        revisit_created_at = max(visited_at, revisit_sched - timedelta(hours=6))
+
                         revisit_id = f"sv-{visit_id_counter:06d}"
                         revisit_code = f"SV-2026-{visit_id_counter:06d}"
                         site_visits.append({
@@ -506,14 +554,15 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                             "channel_partner_id": cp_id,
                             "salesperson_id": assigned_sp,
                             "scheduled_at": revisit_sched,
-                            "visited_at": revisit_sched + timedelta(minutes=15),
+                            "visited_at": revisit_visited,
                             "status": "Completed",
                             "verification_type": "Sales Center QR",
                             "outcome": "Positive / Intent to Book",
                             "feedback_notes": f"Revisit for {customer_name}.",
-                            "created_at": revisit_sched - timedelta(hours=6),
+                            "created_at": revisit_created_at,
                         })
                         visit_id_counter += 1
+                        last_visited_dt = revisit_visited
 
                     # Conversion from completed visit to Booking
                     is_elite = archetype in ("elite_core", "boutique_luxury")
@@ -522,7 +571,7 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                     books_unit = positive_outcome and (rng.random() < booking_close_prob)
 
                     if books_unit:
-                        booking_date_dt = visited_at + timedelta(days=rng.randint(2, 14))
+                        booking_date_dt = advance_dt(last_visited_dt, 86400 * 2, 86400 * 14)
 
                         # Earlier cancelled booking attempt (~6% of booking leads)
                         if rng.random() < 0.06:
@@ -530,7 +579,19 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                             bk_cancelled_id = f"bk-{booking_id_counter:06d}"
                             bk_cancelled_ref = f"BK-2026-{booking_id_counter:06d}"
                             val_cancelled = proj_tmpl["starting_price"]
-                            comm_canc = Decimal(str(round((float(val_cancelled) * 2.0) / 100.0, 2)))
+                            comm_canc = Decimal(
+                                str(round((float(val_cancelled) * 2.0) / 100.0, 2))
+                            )
+                            bk_cancelled_dt = max(
+                                last_visited_dt,
+                                booking_date_dt - timedelta(days=rng.randint(1, 5)),
+                            )
+                            if bk_cancelled_dt >= booking_date_dt:
+                                bk_cancelled_dt = max(
+                                    last_visited_dt,
+                                    booking_date_dt - timedelta(hours=2),
+                                )
+
                             bookings.append({
                                 "id": bk_cancelled_id,
                                 "booking_reference": bk_cancelled_ref,
@@ -540,14 +601,14 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                                 "salesperson_id": assigned_sp,
                                 "unit_number": f"Unit {rng.randint(101, 805)}",
                                 "unit_type": req_type,
-                                "booking_date": (booking_date_dt - timedelta(days=7)).date(),
+                                "booking_date": bk_cancelled_dt.date(),
                                 "booking_status": "Cancelled",
                                 "booking_value": val_cancelled,
                                 "token_amount": Decimal("100000.00"),
                                 "commission_rate_pct": Decimal("2.0"),
                                 "commission_amount": comm_canc,
                                 "is_synthetic_commission": True,
-                                "created_at": booking_date_dt - timedelta(days=7),
+                                "created_at": bk_cancelled_dt,
                             })
                             booking_id_counter += 1
 
@@ -614,13 +675,13 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
                         # Lead did not book: either stays Site Visit Completed or moves to Lost
                         if rng.random() < 0.50:
                             lead_record["status"] = "Lost"
-                            lead_record["lost_at"] = visited_at + timedelta(days=rng.randint(7, 30))
+                            lead_record["lost_at"] = advance_dt(visited_at, 86400 * 7, 86400 * 30)
                             lead_record["lost_reason"] = rng.choice(LOST_REASONS)
                 else:
                     # Visit was cancelled or no show
                     if rng.random() < 0.65:
                         lead_record["status"] = "Lost"
-                        lead_record["lost_at"] = visit_sched_at + timedelta(days=rng.randint(2, 10))
+                        lead_record["lost_at"] = advance_dt(visit_sched_at, 86400 * 2, 86400 * 10)
                         lead_record["lost_reason"] = "Follow-up Expired"
 
             lead_id_counter += 1
