@@ -1,7 +1,7 @@
 # Business Domain, Data Model & KPI Specification
 
 **Project**: Channel Partner Intelligence  
-**Document Version**: 2.1.0 (Phase 2A Semantics Correction)  
+**Document Version**: 2.2.0 (Phase 2A Final Funnel & Booking Semantics Correction)  
 **Status**: Specification Approved  
 
 ---
@@ -186,7 +186,7 @@ Represents an executed transactional agreement and token payment for a specific 
 - **Primary Key**: `id` (UUID or Integer ID)
 - **Business Identifier**: `booking_reference` (e.g., `BK-2026-0089`)
 - **Key Attributes**:
-  - `lead_id`: Foreign key to `leads.id` (**Required**; cardinality `1` lead to `0..*` booking records, with at most one active/confirmed booking at any time).
+  - `lead_id`: Foreign key to `leads.id` (**Required**; cardinality `1` lead to `0..*` booking records, with at most one active booking at any time).
   - `project_id`: Foreign key to `projects.id` (**Required**).
   - `channel_partner_id`: Foreign key to `channel_partners.id` (**Required**).
   - `salesperson_id`: Foreign key to `salespeople.id` (**Required**).
@@ -200,10 +200,19 @@ Represents an executed transactional agreement and token payment for a specific 
   - `commission_amount`: Computed commission amount in INR (e.g., `250000`).
   - `created_at`, `updated_at`: ISO-8601 UTC timestamps.
 
-#### Booking Cardinality & Lifecycle Rules
-1. **Multi-Record History**: A single lead may have multiple historical booking records (e.g., an initial booking attempt that was `Cancelled`, followed by a subsequent `Confirmed` booking).
-2. **Single Active Booking Invariant**: A lead may have **at most one active/confirmed booking** at a time (`booking_status IN ('Initiated', 'Confirmed', 'Completed')`).
-3. **Commission Assumption Disclaimer**:
+#### Booking Status Classification
+- **ACTIVE_BOOKING_STATUSES**:
+  - `Initiated`: Booking token / form submitted; pending clearance or confirmation.
+  - `Confirmed`: Token cleared; unit officially reserved in inventory.
+- **TERMINAL_BOOKING_STATUSES**:
+  - `Completed`: Full agreement and registration finalized; active demand milestone schedule.
+  - `Cancelled`: Booking cancelled by buyer or developer; unit restored to inventory.
+
+#### Booking Cardinality & Active Booking Invariant
+1. **Multi-Record History (`0..*`)**: A single lead may have multiple historical booking records (e.g., an initial booking attempt that was `Cancelled`, followed by a subsequent `Confirmed` booking, or multiple completed past transactions).
+2. **Active Booking Invariant**: A lead may not have more than **one concurrent active booking** (status `Initiated` or `Confirmed`).
+3. **Terminal Records**: `Completed` and `Cancelled` records are historical/terminal records and do **NOT** count as concurrent active bookings.
+4. **Commission Assumption Disclaimer**:
    > **Synthetic Data Notice**: The default `2.0%` base commission rate and computed commission amounts are synthetic sample/demo data assumptions used for analytical pipeline modeling only. They do **NOT** represent Hariwishwa's actual commercial commission policy or partner contract terms.
 
 ---
@@ -230,7 +239,7 @@ A normalized historical audit ledger capturing all meaningful touchpoints and mi
 | `projects` | `leads` | `1` to `0..*` | A project receives multiple leads. Each lead is scoped to one project. |
 | `salespeople` | `leads` | `1` to `0..*` | A salesperson can be assigned to multiple leads. |
 | `leads` | `site_visits` | `1` to `0..*` | A lead can have zero, one, or multiple site visits (re-visits). |
-| `leads` | `bookings` | `1` to `0..*` | A lead may have multiple historical booking records (including cancelled attempts), but at most one active/confirmed booking at any given time. |
+| `leads` | `bookings` | `1` to `0..*` | A lead may have multiple historical booking records, but at most one concurrent active booking (`Initiated` or `Confirmed`). |
 | `projects` | `site_visits` | `1` to `0..*` | Site visits occur at a designated project location. |
 | `projects` | `bookings` | `1` to `0..*` | Bookings reserve units within a designated project. |
 | `channel_partners` | `bookings` | `1` to `0..*` | Bookings are attributed to the referring partner. |
@@ -264,9 +273,9 @@ Stage 4: CONFIRMED BOOKINGS
 | Edge Case Scenario | Funnel Treatment | KPI Impact |
 |---|---|---|
 | **Lead Qualified then Lost** (`New` $\rightarrow$ `Qualified` $\rightarrow$ `Site Visit` $\rightarrow$ `Lost`) | Retains `qualified_at` timestamp. Lead is preserved in Stage 1 and Stage 2. | Stage 2 (Qualified Leads) accurately reflects all prospects who qualified, preventing historical funnel shrinkage. |
-| **Direct Booking without Site Visit** | Prospect books immediately (e.g., NRI investor). | Lead counted in Stage 1, Stage 2, and Stage 4. Does not inflate Stage 3 (Site Visits). Overall Lead $\rightarrow$ Booking rate accounts for this correctly. |
+| **Direct Booking without Site Visit** | Prospect books immediately (e.g., NRI investor). | Lead counted in Stage 1, Stage 2, and Stage 4. Excluded from Stage 3 (Site Visits) and excluded from the numerator of the Site Visit $\rightarrow$ Booking Rate. Prevents direct bookings from distorting the visit close rate. |
 | **Multiple Site Visits for Single Lead** | Lead visits project 3 times before deciding. | Total Completed Site Visits = 3. Unique Leads with $\ge 1$ Visit = 1. Funnel conversion rate uses unique lead attribution to prevent >100% ratios. |
-| **Cancelled Booking followed by Re-booking** | Initial booking cancelled; lead later books another unit. | Lead has 2 booking records (`Cancelled` + `Confirmed`). Validated under `0..*` cardinality; only 1 active booking. Contributes 1 Confirmed Booking to Stage 4. |
+| **Cancelled Booking followed by Re-booking** | Initial booking cancelled; lead later books another unit. | Lead has 2 booking records (`Cancelled` + `Confirmed`). Validated under `0..*` cardinality; at most 1 active booking. Contributes 1 Confirmed Booking to Stage 4. |
 | **Cancelled / No-Show Site Visit** | Visit is scheduled but customer does not attend. | Counted in `Total Scheduled Visits`, excluded from `Completed Site Visits`. |
 | **Invalid / Duplicate Lead** | Wrong contact number or duplicate referral. | Flagged as `status = 'Invalid'`. Excluded from qualification and conversion rate denominators. |
 
@@ -336,13 +345,15 @@ Stage 4: CONFIRMED BOOKINGS
 - **Example Baseline**: $\frac{1,377}{2,840} \times 100 = 48.49\% \approx 48.5\%$
 
 #### KPI 10: Site Visit $\rightarrow$ Booking Rate (Close Rate)
-- **Definition**: Proportion of prospects who conducted a site visit and finalized a unit booking.
+- **Definition**: Proportion of prospects with completed site visits who finalized a unit booking.
 - **Formula**:
-  $$\text{Site Visit } \rightarrow \text{ Booking Rate (\%)} = \left( \frac{\text{Confirmed Bookings}}{\text{Unique Leads with } \ge 1 \text{ Completed Visit}} \right) \times 100$$
-- **Example Baseline**: $\frac{446}{1,377} \times 100 = 32.39\%$
+  $$\text{Site Visit } \rightarrow \text{ Booking Rate (\%)} = \left( \frac{\text{Confirmed Bookings whose lead has } \ge 1 \text{ Completed Site Visit}}{\text{Unique Leads with } \ge 1 \text{ Completed Site Visit}} \right) \times 100$$
+- **Direct Bookings Treatment**: Direct bookings without a completed site visit do **NOT** enter the numerator of this metric.
+- **Example**: If 100 unique leads complete site visits, 30 of them yield confirmed bookings, and 5 direct confirmed bookings occur without site visits, the Visit $\rightarrow$ Booking Rate is $\frac{30}{100} \times 100 = 30.0\%$ (NOT $\frac{35}{100} = 35.0\%$).
+- **Baseline Modeling**: $\frac{446}{1,377} \times 100 = 32.39\%$
 
 #### KPI 11: Overall Lead $\rightarrow$ Booking Rate (End-to-End Funnel Efficiency)
-- **Definition**: Overall channel pipeline conversion from initial lead referral to confirmed sale.
+- **Definition**: Overall channel pipeline conversion from initial lead referral to confirmed sale (including direct bookings).
 - **Formula**:
   $$\text{End-to-End Conversion (\%)} = \left( \frac{\text{Confirmed Bookings}}{\text{Total Valid Leads}} \right) \times 100$$
 - **Example Baseline**: $\frac{446}{3,860} \times 100 = 11.55\%$
@@ -382,10 +393,9 @@ To prevent cohort skew and temporal ambiguity, date attributes are strictly part
    - `bookings.commission_rate_pct` between `0.0` and `10.0%`.
 5. **Controlled Enumerations**:
    - All status fields (`partner.tier`, `project.status`, `lead.status`, `site_visit.status`, `booking.status`) must strictly adhere to the defined enums.
-6. **Booking Cardinality & Single Active Booking Invariant**:
-   - A lead record may be referenced by multiple historical booking records (`0..*`).
-   - A lead record cannot be linked to more than one concurrent booking where `booking_status IN ('Initiated', 'Confirmed', 'Completed')`.
-   - Subsequent booking records are permitted only if prior bookings have transitioned to `Cancelled`.
+6. **Booking Active Status Invariant**:
+   - A lead record may not have more than one concurrent active booking (status `Initiated` or `Confirmed`).
+   - Terminal booking records (`Completed` and `Cancelled`) are historical records and do not count as concurrent active bookings.
 
 ---
 
@@ -518,10 +528,10 @@ CREATE INDEX idx_bk_project ON bookings(project_id);
 CREATE INDEX idx_bk_status ON bookings(booking_status);
 CREATE INDEX idx_bk_date ON bookings(booking_date);
 
--- Partial index ensuring at most 1 active booking per lead:
+-- Partial index ensuring at most 1 concurrent active booking (Initiated or Confirmed) per lead:
 CREATE UNIQUE INDEX idx_one_active_booking_per_lead
 ON bookings(lead_id)
-WHERE booking_status IN ('Initiated', 'Confirmed', 'Completed');
+WHERE booking_status IN ('Initiated', 'Confirmed');
 
 -- 7. Partner Activities
 CREATE TABLE partner_activities (

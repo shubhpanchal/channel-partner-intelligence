@@ -1,7 +1,7 @@
 # API Contracts Specification (Phase 2C Blueprint)
 
 **Project**: Channel Partner Intelligence  
-**Document Version**: 2.1.0 (Phase 2A Semantics Correction)  
+**Document Version**: 2.2.0 (Phase 2A Final Funnel & Booking Semantics Correction)  
 **Status**: Contract Drafted for Phase 2C Implementation  
 
 ---
@@ -401,8 +401,10 @@ Lists executed bookings and unit closure transactions.
   - `channel_partner_id`
   - `booking_status` (`Initiated`, `Confirmed`, `Cancelled`, `Completed`)
   - `start_date`, `end_date`
-- **Cardinality & Status Rule**:
-  - `Lead 1 -> 0..* Booking Records` (multiple historical records permitted; at most 1 active booking in `Initiated`, `Confirmed`, or `Completed` at any given time).
+- **Cardinality & Status Invariant**:
+  - `Lead 1 -> 0..* Booking Records`.
+  - `ACTIVE_BOOKING_STATUSES`: `Initiated`, `Confirmed` (at most 1 active booking per lead at any time).
+  - `TERMINAL_BOOKING_STATUSES`: `Completed`, `Cancelled` (historical records; do not count as concurrent active bookings).
 - **Synthetic Data Disclaimer**:
   - `commission_rate_pct` (2.0%) and `commission_amount` are demo sample values and do NOT represent Hariwishwa's actual commission policy.
 - **Success Response (`200 OK`)**:

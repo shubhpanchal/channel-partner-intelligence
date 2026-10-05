@@ -4,9 +4,15 @@ Test Coverage:
 1. Lead remains historically qualified after status becomes 'Lost' (`qualified_at IS NOT NULL`).
 2. Scheduled vs. completed visit rate calculation (`completed / scheduled * 100`).
 3. Qualified-lead-to-visit rate calculation (`unique_visited / qualified * 100`).
-4. Visit-to-booking rate calculation (`confirmed_bookings / unique_visited * 100`).
-5. Cancelled booking followed by confirmed booking (valid multi-record history for a single lead).
-6. Validation rule enforcing at most one active/confirmed booking per lead.
+4. Visit-to-booking rate calculation (`confirmed_from_visited / unique_visited * 100`).
+5. Direct bookings without visits do NOT affect Visit -> Booking Rate (e.g. 30/100 = 30%, not 35%).
+6. Active vs Terminal booking status invariant:
+   - Cancelled + Initiated = valid
+   - Cancelled + Confirmed = valid
+   - Completed + Initiated = valid
+   - Initiated + Confirmed = invalid
+   - Confirmed + Confirmed = invalid
+   - Completed + Completed = valid under active booking invariant
 7. Commission assumption disclaimer validation.
 """
 
@@ -78,10 +84,10 @@ class TestLeadQualificationMilestone:
 
 
 class TestVisitMetricSemantics:
-    """Tests 2, 3, 4: Distinct visit completion, qualified-to-visit, and visit-to-booking rates."""
+    """Tests for distinct visit completion, qualified-to-visit, and visit-to-booking rates."""
 
     def test_scheduled_vs_completed_visit_rate(self) -> None:
-        """Test 2: Visit Completion Rate = Completed Visits / Scheduled Visits * 100.
+        """Visit Completion Rate = Completed Visits / Scheduled Visits * 100.
 
         1,872 completed / 2,240 scheduled = 83.57%.
         """
@@ -96,11 +102,10 @@ class TestVisitMetricSemantics:
         assert calculate_visit_completion_rate(5, -1) == 0.0
 
     def test_qualified_lead_to_visit_rate(self) -> None:
-        """Test 3: Qualified Lead -> Visit Rate.
+        """Qualified Lead -> Visit Rate.
 
         Formula: Unique Qualified Leads with >=1 Visit / Qualified Leads * 100.
         1,377 unique visited leads / 2,840 qualified leads = 48.49%.
-        Disentangles and clarifies the previous 48.5% visit conversion metric.
         """
         unique_visited_leads = 1377
         qualified_leads = 2840
@@ -112,15 +117,43 @@ class TestVisitMetricSemantics:
         assert calculate_qualified_lead_to_visit_rate(0, 0) == 0.0
 
     def test_visit_to_booking_rate(self) -> None:
-        """Test 4: Site Visit -> Booking Rate.
+        """Site Visit -> Booking Rate.
 
-        Formula: Confirmed Bookings / Unique Leads with >=1 Completed Visit * 100.
+        Formula: Confirmed Bookings from Visited Leads / Unique Visited Leads * 100.
         446 confirmed bookings / 1,377 unique visited leads = 32.39%.
         """
-        confirmed_bookings = 446
+        confirmed_bookings_from_visited = 446
         unique_visited_leads = 1377
-        rate = calculate_visit_to_booking_rate(confirmed_bookings, unique_visited_leads)
+        rate = calculate_visit_to_booking_rate(
+            confirmed_bookings_from_visited, unique_visited_leads
+        )
         assert rate == 32.39
+
+    def test_direct_bookings_do_not_affect_visit_to_booking_rate(self) -> None:
+        """Proves direct bookings without site visits do NOT inflate Visit -> Booking Rate.
+
+        Example:
+        - 100 unique leads with completed visits
+        - 30 confirmed bookings from visited leads
+        - 5 direct confirmed bookings without visits (Total Confirmed Bookings = 35)
+
+        Expected Visit -> Booking Rate = 30 / 100 = 30.0% (NOT 35 / 100 = 35.0%).
+        """
+        unique_visited_leads = 100
+        confirmed_from_visited_leads = 30
+        direct_confirmed_bookings = 5
+        total_confirmed_bookings = confirmed_from_visited_leads + direct_confirmed_bookings
+
+        # Correct metric computation using visited cohort
+        visit_booking_rate = calculate_visit_to_booking_rate(
+            confirmed_from_visited_leads, unique_visited_leads
+        )
+        assert visit_booking_rate == 30.0
+
+        # Demonstrating incorrect naive calculation would have yielded 35.0%
+        naive_rate = (total_confirmed_bookings / unique_visited_leads) * 100.0
+        assert naive_rate == 35.0
+        assert visit_booking_rate != naive_rate
 
     def test_visit_to_booking_rate_zero_denominator(self) -> None:
         """Gracefully handle 0 visited leads."""
@@ -133,71 +166,80 @@ class TestVisitMetricSemantics:
         assert calculate_overall_lead_to_booking_rate(0, 0) == 0.0
 
 
-class TestBookingCardinalityAndLifecycle:
-    """Tests 5 & 6: Multi-record booking history and single active booking constraint."""
+class TestBookingActiveStatusSemantics:
+    """Tests for active vs terminal status invariant and multi-record lead booking history."""
 
-    def test_cancelled_booking_followed_by_confirmed_booking(self) -> None:
-        """Test 5: Lead may have an initial cancelled booking attempt followed by a booking."""
-        lead_bookings = [
-            {
-                "id": "bk-001",
-                "booking_reference": "BK-2026-0001",
-                "lead_id": "ld-842",
-                "unit_number": "Tower A - 402",
-                "booking_status": "Cancelled",
-                "booking_date": "2026-05-10",
-                "booking_value": 11000000.0,
-            },
-            {
-                "id": "bk-002",
-                "booking_reference": "BK-2026-0089",
-                "lead_id": "ld-842",
-                "unit_number": "Tower B - 802",
-                "booking_status": "Confirmed",
-                "booking_date": "2026-06-15",
-                "booking_value": 13500000.0,
-            },
+    def test_cancelled_plus_initiated_is_valid(self) -> None:
+        """Case 1: Cancelled + Initiated = valid (1 active booking)."""
+        bookings = [
+            {"id": "bk-1", "lead_id": "ld-1", "booking_status": "Cancelled"},
+            {"id": "bk-2", "lead_id": "ld-1", "booking_status": "Initiated"},
         ]
-        is_valid, error_msg = validate_lead_booking_records(lead_bookings)
+        is_valid, err = validate_lead_booking_records(bookings)
         assert is_valid is True
-        assert error_msg is None
+        assert err is None
 
-    def test_no_more_than_one_active_confirmed_booking_per_lead(self) -> None:
-        """Test 6: Reject attempts to assign multiple active bookings to the same lead."""
-        multiple_active_bookings = [
-            {
-                "id": "bk-002",
-                "booking_reference": "BK-2026-0089",
-                "lead_id": "ld-842",
-                "unit_number": "Tower B - 802",
-                "booking_status": "Confirmed",
-            },
-            {
-                "id": "bk-003",
-                "booking_reference": "BK-2026-0095",
-                "lead_id": "ld-842",
-                "unit_number": "Tower C - 1204",
-                "booking_status": "Initiated",
-            },
+    def test_cancelled_plus_confirmed_is_valid(self) -> None:
+        """Case 2: Cancelled + Confirmed = valid (1 active booking)."""
+        bookings = [
+            {"id": "bk-1", "lead_id": "ld-1", "booking_status": "Cancelled"},
+            {"id": "bk-2", "lead_id": "ld-1", "booking_status": "Confirmed"},
         ]
-        is_valid, error_msg = validate_lead_booking_records(multiple_active_bookings)
+        is_valid, err = validate_lead_booking_records(bookings)
+        assert is_valid is True
+        assert err is None
+
+    def test_completed_plus_initiated_is_valid(self) -> None:
+        """Case 3: Completed + Initiated = valid under active booking rule
+
+        (Completed is terminal; Initiated is active, total active = 1).
+        """
+        bookings = [
+            {"id": "bk-1", "lead_id": "ld-1", "booking_status": "Completed"},
+            {"id": "bk-2", "lead_id": "ld-1", "booking_status": "Initiated"},
+        ]
+        is_valid, err = validate_lead_booking_records(bookings)
+        assert is_valid is True
+        assert err is None
+
+    def test_initiated_plus_confirmed_is_invalid(self) -> None:
+        """Case 4: Initiated + Confirmed = invalid (2 concurrent active bookings)."""
+        bookings = [
+            {"id": "bk-1", "lead_id": "ld-1", "booking_status": "Initiated"},
+            {"id": "bk-2", "lead_id": "ld-1", "booking_status": "Confirmed"},
+        ]
+        is_valid, err = validate_lead_booking_records(bookings)
         assert is_valid is False
-        assert error_msg is not None
-        assert "At most 1 active booking is allowed" in error_msg
+        assert err is not None
+        assert "At most 1 active booking is allowed" in err
 
-    def test_multiple_cancelled_bookings_allowed(self) -> None:
-        """A lead with 2 cancelled bookings and 0 active bookings is valid."""
-        cancelled_bookings = [
-            {"id": "bk-001", "lead_id": "ld-842", "booking_status": "Cancelled"},
-            {"id": "bk-002", "lead_id": "ld-842", "booking_status": "Cancelled"},
+    def test_confirmed_plus_confirmed_is_invalid(self) -> None:
+        """Case 5: Confirmed + Confirmed = invalid (2 concurrent active bookings)."""
+        bookings = [
+            {"id": "bk-1", "lead_id": "ld-1", "booking_status": "Confirmed"},
+            {"id": "bk-2", "lead_id": "ld-1", "booking_status": "Confirmed"},
         ]
-        is_valid, error_msg = validate_lead_booking_records(cancelled_bookings)
+        is_valid, err = validate_lead_booking_records(bookings)
+        assert is_valid is False
+        assert err is not None
+        assert "At most 1 active booking is allowed" in err
+
+    def test_completed_plus_completed_is_valid_under_active_invariant(self) -> None:
+        """Case 6: Completed + Completed should NOT be rejected by active booking invariant
+
+        (Both are terminal records, 0 active bookings).
+        """
+        bookings = [
+            {"id": "bk-1", "lead_id": "ld-1", "booking_status": "Completed"},
+            {"id": "bk-2", "lead_id": "ld-1", "booking_status": "Completed"},
+        ]
+        is_valid, err = validate_lead_booking_records(bookings)
         assert is_valid is True
-        assert error_msg is None
+        assert err is None
 
 
 class TestCommissionAssumptionDisclaimer:
-    """Test 7: Verify commission helper flags 2.0% as synthetic demo assumption."""
+    """Test: Verify commission helper flags 2.0% as synthetic demo assumption."""
 
     def test_commission_calculation_and_disclaimer_flag(self) -> None:
         result = calculate_synthetic_demo_commission(12500000.0, 2.0)

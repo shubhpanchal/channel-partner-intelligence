@@ -5,6 +5,8 @@ Phase 2A Domain Semantics Specification:
 - Distinct visit & conversion metrics (Visit Completion Rate,
   Qualified Lead to Visit Rate, Site Visit to Booking Rate).
 - Booking cardinality: Lead 1 -> 0..* Booking Records with at most 1 active booking.
+- Active booking statuses: Initiated, Confirmed.
+- Terminal booking statuses: Completed, Cancelled.
 - Commission policy disclaimer: 2.0% base rate is synthetic demo data only.
 """
 
@@ -12,8 +14,8 @@ from __future__ import annotations
 
 from typing import Any
 
-ACTIVE_BOOKING_STATUSES = frozenset({"Initiated", "Confirmed", "Completed"})
-TERMINAL_INACTIVE_BOOKING_STATUSES = frozenset({"Cancelled"})
+ACTIVE_BOOKING_STATUSES = frozenset({"Initiated", "Confirmed"})
+TERMINAL_BOOKING_STATUSES = frozenset({"Completed", "Cancelled"})
 DEFAULT_DEMO_COMMISSION_RATE_PCT = 2.0
 
 
@@ -64,19 +66,20 @@ def calculate_qualified_lead_to_visit_rate(
 
 
 def calculate_visit_to_booking_rate(
-    confirmed_bookings: int,
+    confirmed_bookings_from_visited_leads: int,
     unique_visited_leads: int,
     precision: int = 2,
 ) -> float:
     """Calculate Site Visit -> Booking Rate:
-    Confirmed Bookings / Unique Leads with >=1 Completed Visit * 100.
+    Confirmed Bookings whose lead has >=1 Completed Site Visit /
+    Unique Leads with >=1 Completed Site Visit * 100.
 
-    Measures close rate among prospects who attended a property visit
-    (e.g. 446 confirmed bookings / 1,377 unique visited leads = 32.39%).
+    Ensures direct bookings without site visits do not affect or inflate
+    the visit close rate metric.
     """
     if unique_visited_leads <= 0:
         return 0.0
-    return round((confirmed_bookings / unique_visited_leads) * 100.0, precision)
+    return round((confirmed_bookings_from_visited_leads / unique_visited_leads) * 100.0, precision)
 
 
 def calculate_overall_lead_to_booking_rate(
@@ -97,12 +100,13 @@ def calculate_overall_lead_to_booking_rate(
 def validate_lead_booking_records(
     bookings: list[dict[str, Any]],
 ) -> tuple[bool, str | None]:
-    """Validate booking records for a lead against cardinality and active booking rules.
+    """Validate booking records for a lead against active booking rules.
 
-    Business Rule:
-    A lead may have multiple historical booking records (e.g. cancelled attempts),
-    but may have at most ONE active/confirmed booking at a time
-    (status in 'Initiated', 'Confirmed', 'Completed').
+    Business Invariant:
+    A lead may not have more than one concurrent active booking
+    (status 'Initiated' or 'Confirmed').
+    Terminal booking records ('Completed' and 'Cancelled') are historical
+    records and do not count as concurrent active bookings.
     """
     active_bookings = [
         b for b in bookings if b.get("booking_status") in ACTIVE_BOOKING_STATUSES
