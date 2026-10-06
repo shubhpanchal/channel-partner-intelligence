@@ -560,6 +560,53 @@ Retrieves full customer identity, attribution, site visit logs, and complete chr
       "cancelled_at": null,
       "created_at": "2026-11-22T21:01:31Z"
     }
+  ],
+  "lifecycle_events": [
+    {
+      "event_id": "bk-000014-created",
+      "event_type": "BOOKING_CREATED",
+      "event_at": "2026-11-17T08:48:05Z",
+      "booking_id": "bk-000014",
+      "booking_reference": "BK-2026-000014",
+      "unit_number": "Unit 773",
+      "unit_type": "3 BHK Luxury",
+      "project_id": "prj-sky-p1",
+      "project_name": "Skyfinia Phase 1",
+      "booking_status": "Cancelled",
+      "booking_value": 18500000.0,
+      "is_replacement": false,
+      "description": "Booking attempted for Unit 773 (3 BHK Luxury)"
+    },
+    {
+      "event_id": "bk-000014-cancelled",
+      "event_type": "BOOKING_CANCELLED",
+      "event_at": "2026-11-19T09:54:32Z",
+      "booking_id": "bk-000014",
+      "booking_reference": "BK-2026-000014",
+      "unit_number": "Unit 773",
+      "unit_type": "3 BHK Luxury",
+      "project_id": "prj-sky-p1",
+      "project_name": "Skyfinia Phase 1",
+      "booking_status": "Cancelled",
+      "booking_value": 18500000.0,
+      "is_replacement": false,
+      "description": "Booking cancelled for Unit 773 (3 BHK Luxury)"
+    },
+    {
+      "event_id": "bk-000015-created",
+      "event_type": "BOOKING_CONFIRMED",
+      "event_at": "2026-11-22T21:01:31Z",
+      "booking_id": "bk-000015",
+      "booking_reference": "BK-2026-000015",
+      "unit_number": "Unit 1706",
+      "unit_type": "3 BHK Luxury",
+      "project_id": "prj-sky-p1",
+      "project_name": "Skyfinia Phase 1",
+      "booking_status": "Confirmed",
+      "booking_value": 18500000.0,
+      "is_replacement": true,
+      "description": "Replacement booking confirmed for Unit 1706 (3 BHK Luxury)"
+    }
   ]
 }
 ```

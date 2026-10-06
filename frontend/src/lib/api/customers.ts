@@ -51,6 +51,22 @@ export interface CustomerBookingItem {
   created_at: string;
 }
 
+export interface CustomerLifecycleEvent {
+  event_id: string;
+  event_type: string;
+  event_at: string;
+  booking_id: string;
+  booking_reference: string;
+  unit_number: string;
+  unit_type: string;
+  project_id: string;
+  project_name: string;
+  booking_status: string;
+  booking_value: number;
+  is_replacement?: boolean;
+  description?: string | null;
+}
+
 export interface CustomerDetailResponse {
   lead_id: string;
   lead_code: string;
@@ -77,6 +93,7 @@ export interface CustomerDetailResponse {
   salesperson_phone?: string | null;
   site_visits: CustomerSiteVisitItem[];
   bookings: CustomerBookingItem[];
+  lifecycle_events: CustomerLifecycleEvent[];
 }
 
 const API_BASE_URL =

@@ -83,6 +83,53 @@ const MOCK_AARAV_DETAIL: customersApi.CustomerDetailResponse = {
       created_at: "2026-11-22T21:01:31Z",
     },
   ],
+  lifecycle_events: [
+    {
+      event_id: "bk-000014-created",
+      event_type: "BOOKING_CREATED",
+      event_at: "2026-11-17T08:48:05Z",
+      booking_id: "bk-000014",
+      booking_reference: "BK-2026-000014",
+      unit_number: "Unit 773",
+      unit_type: "3 BHK Luxury",
+      project_id: "prj-sky-p1",
+      project_name: "Skyfinia Phase 1",
+      booking_status: "Cancelled",
+      booking_value: 18500000.0,
+      is_replacement: false,
+      description: "Booking attempted for Unit 773 (3 BHK Luxury)",
+    },
+    {
+      event_id: "bk-000014-cancelled",
+      event_type: "BOOKING_CANCELLED",
+      event_at: "2026-11-19T09:54:32Z",
+      booking_id: "bk-000014",
+      booking_reference: "BK-2026-000014",
+      unit_number: "Unit 773",
+      unit_type: "3 BHK Luxury",
+      project_id: "prj-sky-p1",
+      project_name: "Skyfinia Phase 1",
+      booking_status: "Cancelled",
+      booking_value: 18500000.0,
+      is_replacement: false,
+      description: "Booking cancelled for Unit 773 (3 BHK Luxury)",
+    },
+    {
+      event_id: "bk-000015-created",
+      event_type: "BOOKING_CONFIRMED",
+      event_at: "2026-11-22T21:01:31Z",
+      booking_id: "bk-000015",
+      booking_reference: "BK-2026-000015",
+      unit_number: "Unit 1706",
+      unit_type: "3 BHK Luxury",
+      project_id: "prj-sky-p1",
+      project_name: "Skyfinia Phase 1",
+      booking_status: "Confirmed",
+      booking_value: 18500000.0,
+      is_replacement: true,
+      description: "Replacement booking confirmed for Unit 1706 (3 BHK Luxury)",
+    },
+  ],
 };
 
 function renderCustomerDetail(leadId: string) {
@@ -122,7 +169,7 @@ describe("CustomerDetailView Component", () => {
     });
   });
 
-  it("renders full customer details, attribution, site visits, and booking replacement lifecycle", async () => {
+  it("renders full customer details, attribution, site visits, and three-event booking replacement lifecycle", async () => {
     vi.spyOn(customersApi, "fetchCustomerById").mockResolvedValue(MOCK_AARAV_DETAIL);
     renderCustomerDetail("ld-000067");
 
@@ -145,16 +192,31 @@ describe("CustomerDetailView Component", () => {
     expect(screen.getByText("SV-2026-000045")).toBeInTheDocument();
     expect(screen.getByText("Liked the sample flat")).toBeInTheDocument();
 
-    // Booking replacement lifecycle
+    // Booking replacement lifecycle container & badge
     expect(screen.getByTestId("booking-history-card")).toBeInTheDocument();
-    expect(screen.getByTestId("replacement-lifecycle-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("replacement-lifecycle-badge")).toBeInTheDocument();
     expect(screen.getByText(/Unit Replacement Lifecycle Detected/)).toBeInTheDocument();
 
-    // Both units visible
-    expect(screen.getByText("Unit 773")).toBeInTheDocument();
-    expect(screen.getByText("Unit 1706")).toBeInTheDocument();
-    expect(screen.getByText("BK-2026-000014")).toBeInTheDocument();
-    expect(screen.getByText("BK-2026-000015")).toBeInTheDocument();
+    // Three-Event Timeline Verification (Issue #12)
+    expect(screen.getByTestId("lifecycle-events-timeline")).toBeInTheDocument();
+    expect(screen.getByText("Booking Attempted")).toBeInTheDocument();
+    expect(screen.getByText("Booking Cancelled")).toBeInTheDocument();
+    expect(screen.getByText("Replacement Booking Confirmed")).toBeInTheDocument();
+
+    // Step indicators
+    expect(screen.getByText("Step 1")).toBeInTheDocument();
+    expect(screen.getByText("Step 2")).toBeInTheDocument();
+    expect(screen.getByText("Step 3")).toBeInTheDocument();
+
+    // Both units visible across events and table
+    expect(screen.getAllByText("Unit 773").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("Unit 1706").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("BK-2026-000014").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("BK-2026-000015").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Cancellation recorded")).toBeInTheDocument();
+
+    // Raw Bookings Table
+    expect(screen.getByText(/Raw Booking Records \(2\)/)).toBeInTheDocument();
 
     // Navigation back
     const backBtn = screen.getByTestId("back-to-dashboard-btn");

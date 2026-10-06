@@ -318,7 +318,10 @@ export function CustomerDetailView({ leadId }: CustomerDetailViewProps) {
               </CardDescription>
             </div>
             {hasReplacementScenario && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 self-start sm:self-auto">
+              <span
+                data-testid="replacement-lifecycle-badge"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 self-start sm:self-auto"
+              >
                 <RotateCcw className="h-3.5 w-3.5 text-blue-600" />
                 Unit Replacement Lifecycle Detected
               </span>
@@ -326,62 +329,172 @@ export function CustomerDetailView({ leadId }: CustomerDetailViewProps) {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {customer.bookings.length === 0 ? (
+          {(!customer.lifecycle_events || customer.lifecycle_events.length === 0) &&
+          customer.bookings.length === 0 ? (
             <div className="p-8 text-center text-xs text-slate-500">
               No booking transactions recorded for this customer yet.
             </div>
           ) : (
             <div>
-              {/* Visual Lifecycle Replacement Summary Banner if cancelled + replacement bookings exist */}
-              {hasReplacementScenario && (
+              {/* Chronological Lifecycle Timeline (Primary Visual Representation) */}
+              {customer.lifecycle_events && customer.lifecycle_events.length > 0 && (
                 <div
-                  data-testid="replacement-lifecycle-banner"
-                  className="bg-slate-50/80 border-b border-border px-6 py-4"
+                  data-testid="lifecycle-timeline-section"
+                  className="p-6 bg-slate-50/50 border-b border-border"
                 >
-                  <div className="text-xs font-semibold text-slate-700 mb-2">
-                    Unit Replacement Timeline:
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-slate-500" />
+                    Booking Lifecycle Journey ({customer.lifecycle_events.length}{" "}
+                    {customer.lifecycle_events.length === 1 ? "Event" : "Events"})
                   </div>
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
-                    {customer.bookings.map((b, idx) => (
-                      <React.Fragment key={b.id}>
-                        {idx > 0 && (
-                          <div className="hidden md:flex items-center text-slate-400 font-bold px-1">
-                            →
-                          </div>
-                        )}
+
+                  {/* Responsive Timeline Grid */}
+                  <div
+                    data-testid="lifecycle-events-timeline"
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4 relative"
+                  >
+                    {customer.lifecycle_events.map((event, idx) => {
+                      const isCancelled = event.event_type === "BOOKING_CANCELLED";
+                      const isConfirmed =
+                        event.event_type === "BOOKING_CONFIRMED" ||
+                        event.event_type === "BOOKING_COMPLETED";
+
+                      let eventTitle = "Booking Attempted";
+                      if (isCancelled) {
+                        eventTitle = "Booking Cancelled";
+                      } else if (isConfirmed) {
+                        eventTitle = event.is_replacement
+                          ? "Replacement Booking Confirmed"
+                          : "Booking Confirmed";
+                      }
+
+                      return (
                         <div
-                          className={`rounded-lg p-3 text-xs border w-full md:w-auto flex-1 ${
-                            b.booking_status === "Cancelled"
-                              ? "bg-rose-50/70 border-rose-200 text-rose-900"
-                              : "bg-emerald-50/70 border-emerald-200 text-emerald-900"
-                          }`}
+                          key={event.event_id}
+                          data-testid={`lifecycle-event-${idx}`}
+                          className="flex flex-col relative group"
                         >
-                          <div className="flex items-center justify-between font-semibold">
-                            <span className="text-xs">{b.unit_number} ({b.unit_type})</span>
-                            {getBookingStatusBadge(b.booking_status)}
-                          </div>
-                          <div className="mt-1.5 text-[11px] space-y-0.5 opacity-90">
-                            <div>Attempted: <span className="font-medium">{formatDate(b.booking_date)}</span></div>
-                            {b.cancelled_at && (
-                              <div className="font-semibold text-rose-700">
-                                Cancelled: {formatDateTime(b.cancelled_at)}
+                          <div
+                            className={`rounded-xl p-4 border transition-all shadow-2xs h-full flex flex-col justify-between ${
+                              isCancelled
+                                ? "bg-rose-50/70 border-rose-200 text-rose-950 hover:border-rose-300"
+                                : isConfirmed
+                                ? "bg-emerald-50/70 border-emerald-200 text-emerald-950 hover:border-emerald-300"
+                                : "bg-blue-50/60 border-blue-200 text-blue-950 hover:border-blue-300"
+                            }`}
+                          >
+                            <div>
+                              {/* Event Header with Icon, Title, and Step */}
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wide">
+                                  {isCancelled ? (
+                                    <XCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                                  ) : isConfirmed ? (
+                                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                                  ) : (
+                                    <Clock className="h-4 w-4 text-blue-600 shrink-0" />
+                                  )}
+                                  <span
+                                    className={
+                                      isCancelled
+                                        ? "text-rose-900"
+                                        : isConfirmed
+                                        ? "text-emerald-900"
+                                        : "text-blue-900"
+                                    }
+                                  >
+                                    {eventTitle}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/80 border border-slate-200/80 text-slate-600 font-semibold">
+                                  Step {idx + 1}
+                                </span>
                               </div>
-                            )}
-                            <div className="font-medium">
-                              Value: {formatCurrencyInr(b.booking_value)}
+
+                              {/* Formatted Date & Time */}
+                              <div className="text-xs font-medium text-slate-600 mb-3 flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-slate-400" />
+                                <span>{formatDateTime(event.event_at)}</span>
+                              </div>
+
+                              {/* Booking & Unit Details */}
+                              <div className="space-y-1.5 text-xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-500">Booking:</span>
+                                  <span className="font-mono font-bold text-slate-900">
+                                    {event.booking_reference}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-500">Unit:</span>
+                                  <span className="font-bold text-slate-900">
+                                    {event.unit_number}
+                                  </span>
+                                </div>
+                                {event.unit_type && (
+                                  <div className="flex items-center justify-between text-slate-600">
+                                    <span className="text-slate-500">Unit Type:</span>
+                                    <span>{event.unit_type}</span>
+                                  </div>
+                                )}
+                                {event.project_name && (
+                                  <div className="flex items-center justify-between text-slate-600">
+                                    <span className="text-slate-500">Project:</span>
+                                    <span className="font-medium text-slate-800 truncate max-w-[150px]">
+                                      {event.project_name}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Event Bottom Status Detail */}
+                            <div className="mt-3 pt-2.5 border-t border-slate-200/80 text-[11px]">
+                              {isCancelled ? (
+                                <div className="font-semibold text-rose-700 flex items-center justify-between">
+                                  <span>Status: Cancelled</span>
+                                  <span className="text-rose-600 text-[10px] bg-rose-100/60 px-1.5 py-0.5 rounded border border-rose-200">
+                                    Cancellation recorded
+                                  </span>
+                                </div>
+                              ) : isConfirmed ? (
+                                <div className="flex items-center justify-between font-semibold">
+                                  <span className="text-emerald-700">Status: {event.booking_status}</span>
+                                  <span className="text-slate-900">
+                                    {formatCurrencyInr(event.booking_value)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between font-semibold">
+                                  <span className="text-blue-700">Status: Attempted</span>
+                                  <span className="text-slate-900">
+                                    {formatCurrencyInr(event.booking_value)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
-                      </React.Fragment>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
+              {/* Raw Booking Records Table Header */}
+              <div className="px-6 py-3 bg-slate-50/80 border-b border-border flex items-center justify-between">
+                <div className="text-xs font-semibold text-slate-700">
+                  Raw Booking Records ({customer.bookings.length})
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Underlying database transactions and contract values
+                </div>
+              </div>
+
               {/* Detailed Bookings Table */}
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader className="bg-slate-50/80">
+                  <TableHeader className="bg-slate-50/40">
                     <TableRow>
                       <TableHead className="text-xs font-semibold text-slate-700">Booking Ref</TableHead>
                       <TableHead className="text-xs font-semibold text-slate-700">Unit</TableHead>
@@ -393,7 +506,7 @@ export function CustomerDetailView({ leadId }: CustomerDetailViewProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {customer.bookings.map((booking, idx) => (
+                    {customer.bookings.map((booking) => (
                       <TableRow
                         key={booking.id}
                         data-testid={`customer-booking-row-${booking.id}`}

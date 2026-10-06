@@ -68,6 +68,7 @@ describe("Customers API client", () => {
       created_at: "2026-01-10T10:00:00Z",
       site_visits: [],
       bookings: [],
+      lifecycle_events: [],
     };
 
     global.fetch = vi.fn().mockResolvedValue({

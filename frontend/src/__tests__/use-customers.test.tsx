@@ -80,6 +80,7 @@ const MOCK_DETAIL_RESPONSE: customersApi.CustomerDetailResponse = {
       created_at: "2026-11-22T21:01:31Z",
     },
   ],
+  lifecycle_events: [],
 };
 
 function createWrapper() {

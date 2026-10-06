@@ -227,6 +227,50 @@ def test_get_customer_detail_canonical_demo(seeded_client: TestClient):
     assert dt_created_b > dt_cancelled_a
     assert bk_cancelled["unit_number"] != bk_confirmed["unit_number"]
 
+    # Lifecycle Events: Three-Event Timeline Verification (Issue #12)
+    lifecycle_events = data["lifecycle_events"]
+    assert len(lifecycle_events) == 3
+
+    ev1 = lifecycle_events[0]
+    ev2 = lifecycle_events[1]
+    ev3 = lifecycle_events[2]
+
+    # Event 1: Booking Attempted / Created
+    assert ev1["event_type"] == "BOOKING_CREATED"
+    assert ev1["booking_id"] == "bk-000014"
+    assert ev1["booking_reference"] == "BK-2026-000014"
+    assert ev1["unit_number"] == "Unit 773"
+    assert ev1["is_replacement"] is False
+    assert ev1["event_at"] == bk_cancelled["created_at"]
+
+    # Event 2: Booking Cancelled
+    assert ev2["event_type"] == "BOOKING_CANCELLED"
+    assert ev2["booking_id"] == "bk-000014"
+    assert ev2["booking_reference"] == "BK-2026-000014"
+    assert ev2["unit_number"] == "Unit 773"
+    assert ev2["is_replacement"] is False
+    assert ev2["event_at"] == bk_cancelled["cancelled_at"]
+
+    # Event 3: Replacement Booking Confirmed
+    assert ev3["event_type"] == "BOOKING_CONFIRMED"
+    assert ev3["booking_id"] == "bk-000015"
+    assert ev3["booking_reference"] == "BK-2026-000015"
+    assert ev3["unit_number"] == "Unit 1706"
+    assert ev3["is_replacement"] is True
+    assert ev3["event_at"] == bk_confirmed["created_at"]
+
+    # Invariants
+    assert ev1["booking_id"] == ev2["booking_id"]
+    assert ev3["booking_id"] != ev1["booking_id"]
+    assert ev1["unit_number"] == ev2["unit_number"]
+    assert ev3["unit_number"] != ev1["unit_number"]
+
+    # Chronology
+    dt_ev1 = datetime.fromisoformat(ev1["event_at"])
+    dt_ev2 = datetime.fromisoformat(ev2["event_at"])
+    dt_ev3 = datetime.fromisoformat(ev3["event_at"])
+    assert dt_ev1 < dt_ev2 < dt_ev3
+
 
 def test_get_customer_detail_by_lead_code(seeded_client: TestClient):
     """Test retrieving customer detail using lead_code LD-2026-000067."""
@@ -237,9 +281,49 @@ def test_get_customer_detail_by_lead_code(seeded_client: TestClient):
     assert data["customer_name"] == "Aarav Mehta"
 
 
+def test_get_customer_detail_single_confirmed_booking(seeded_client: TestClient):
+    """Test customer with standard single booking produces 1 lifecycle event."""
+    # Search for a customer with confirmed lead status
+    search_res = seeded_client.get("/api/v1/customers/search?q=Sharma&page_size=10")
+    assert search_res.status_code == 200
+    items = search_res.json()["items"]
+
+    # Find any lead with a single booking
+    for item in items:
+        detail_res = seeded_client.get(f"/api/v1/customers/{item['lead_id']}")
+        if detail_res.status_code == 200:
+            d = detail_res.json()
+            if len(d["bookings"]) == 1 and d["bookings"][0]["booking_status"] == "Confirmed":
+                assert len(d["lifecycle_events"]) == 1
+                ev = d["lifecycle_events"][0]
+                assert ev["event_type"] == "BOOKING_CONFIRMED"
+                assert ev["is_replacement"] is False
+                break
+
+
+def test_get_customer_detail_no_bookings(seeded_client: TestClient):
+    """Test customer without bookings returns empty lifecycle_events list."""
+    # Search for a qualified or fresh lead
+    search_res = seeded_client.get("/api/v1/customers/search?q=Patil&page_size=20")
+    assert search_res.status_code == 200
+    items = search_res.json()["items"]
+
+    found_unbooked = False
+    for item in items:
+        detail_res = seeded_client.get(f"/api/v1/customers/{item['lead_id']}")
+        if detail_res.status_code == 200:
+            d = detail_res.json()
+            if len(d["bookings"]) == 0:
+                assert d["lifecycle_events"] == []
+                found_unbooked = True
+                break
+    assert found_unbooked
+
+
 def test_get_customer_detail_404_not_found(seeded_client: TestClient):
     """Test retrieving non-existent customer returns 404."""
     response = seeded_client.get("/api/v1/customers/non-existent-lead-id")
     assert response.status_code == 404
     data = response.json()
     assert "not found" in data["detail"].lower()
+

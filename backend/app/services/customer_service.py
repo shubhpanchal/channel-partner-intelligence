@@ -12,6 +12,7 @@ from app.models.entities import Booking, Lead, SiteVisit
 from app.schemas.customers import (
     CustomerBookingItem,
     CustomerDetailResponse,
+    CustomerLifecycleEvent,
     CustomerSearchItem,
     CustomerSearchResponse,
     CustomerSiteVisitItem,
@@ -160,6 +161,83 @@ def get_customer_detail(
         for bk in booking_records
     ]
 
+    # Derive discrete lifecycle events for chronological timeline investigation
+    # Sort bookings by created_at to evaluate replacement sequence
+    sorted_by_creation = sorted(booking_records, key=lambda b: (b.created_at, b.id))
+    lifecycle_events: List[CustomerLifecycleEvent] = []
+    has_prior_cancellation = False
+
+    for bk in sorted_by_creation:
+        is_replacement = has_prior_cancellation
+        proj_name = bk.project.name if bk.project else "Unknown Project"
+
+        # Determine event type and description for the initial booking creation/attempt
+        if bk.booking_status == "Cancelled":
+            event_type = "BOOKING_CREATED"
+            description = f"Booking attempted for {bk.unit_number} ({bk.unit_type})"
+        elif bk.booking_status == "Confirmed":
+            event_type = "BOOKING_CONFIRMED"
+            description = (
+                f"Replacement booking confirmed for {bk.unit_number} ({bk.unit_type})"
+                if is_replacement
+                else f"Booking confirmed for {bk.unit_number} ({bk.unit_type})"
+            )
+        elif bk.booking_status == "Completed":
+            event_type = "BOOKING_COMPLETED"
+            description = (
+                f"Replacement booking completed for {bk.unit_number} ({bk.unit_type})"
+                if is_replacement
+                else f"Booking completed for {bk.unit_number} ({bk.unit_type})"
+            )
+        else:
+            event_type = "BOOKING_CREATED"
+            description = f"Booking initiated for {bk.unit_number} ({bk.unit_type})"
+
+        # Event 1: Creation / Attempt event
+        lifecycle_events.append(
+            CustomerLifecycleEvent(
+                event_id=f"{bk.id}-created",
+                event_type=event_type,
+                event_at=bk.created_at,
+                booking_id=bk.id,
+                booking_reference=bk.booking_reference,
+                unit_number=bk.unit_number,
+                unit_type=bk.unit_type,
+                project_id=bk.project_id,
+                project_name=proj_name,
+                booking_status=bk.booking_status,
+                booking_value=float(bk.booking_value),
+                is_replacement=is_replacement,
+                description=description,
+            )
+        )
+
+        # Event 2: Cancellation event if cancelled
+        if bk.cancelled_at is not None or bk.booking_status == "Cancelled":
+            has_prior_cancellation = True
+            cancellation_time = bk.cancelled_at or bk.created_at
+            lifecycle_events.append(
+                CustomerLifecycleEvent(
+                    event_id=f"{bk.id}-cancelled",
+                    event_type="BOOKING_CANCELLED",
+                    event_at=cancellation_time,
+                    booking_id=bk.id,
+                    booking_reference=bk.booking_reference,
+                    unit_number=bk.unit_number,
+                    unit_type=bk.unit_type,
+                    project_id=bk.project_id,
+                    project_name=proj_name,
+                    booking_status="Cancelled",
+                    booking_value=float(bk.booking_value),
+                    is_replacement=False,
+                    description=f"Booking cancelled for {bk.unit_number} ({bk.unit_type})",
+                )
+            )
+
+    # Sort all lifecycle events strictly by event_at ascending
+    lifecycle_events.sort(key=lambda ev: (ev.event_at, ev.event_id))
+
+
     return CustomerDetailResponse(
         lead_id=lead.id,
         lead_code=lead.lead_code,
@@ -198,4 +276,5 @@ def get_customer_detail(
         ),
         site_visits=site_visits,
         bookings=bookings,
+        lifecycle_events=lifecycle_events,
     )

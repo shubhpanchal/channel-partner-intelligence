@@ -73,6 +73,33 @@ class CustomerBookingItem(BaseModel):
     created_at: datetime
 
 
+class CustomerLifecycleEvent(BaseModel):
+    """Derived discrete business event along the customer booking lifecycle."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    event_id: str = Field(..., description="Unique event identifier (e.g. bk-000014-created)")
+    event_type: str = Field(
+        ...,
+        description="Event classification (e.g. BOOKING_CREATED, BOOKING_CANCELLED)",
+    )
+    event_at: datetime = Field(..., description="Timestamp of the lifecycle event")
+    booking_id: str = Field(..., description="Associated database booking identifier")
+    booking_reference: str = Field(..., description="Business booking code (e.g. BK-2026-000014)")
+    unit_number: str = Field(..., description="Allocated unit number (e.g. Unit 773)")
+    unit_type: str = Field(..., description="Unit layout type (e.g. 3 BHK Luxury)")
+    project_id: str = Field(..., description="Project identifier")
+    project_name: str = Field(..., description="Project name")
+    booking_status: str = Field(..., description="Booking status after this event transition")
+    booking_value: float = Field(..., description="Booking agreement value in INR")
+    is_replacement: bool = Field(
+        False, description="True if booking replaces a previously cancelled attempt"
+    )
+    description: Optional[str] = Field(
+        None, description="Human-readable event summary description"
+    )
+
+
 class CustomerDetailResponse(BaseModel):
     """Comprehensive customer detail response for lifecycle investigation."""
 
@@ -108,3 +135,8 @@ class CustomerDetailResponse(BaseModel):
     # History
     site_visits: List[CustomerSiteVisitItem] = Field(default_factory=list)
     bookings: List[CustomerBookingItem] = Field(default_factory=list)
+    lifecycle_events: List[CustomerLifecycleEvent] = Field(
+        default_factory=list,
+        description="Chronological discrete lifecycle event sequence",
+    )
+

@@ -171,7 +171,12 @@ To provide global customer discovery and lifecycle transparency without creating
 - **Detail Endpoint (`GET /api/v1/customers/{lead_id}`)**:
   - Returns complete customer profile, contact info, lead status stages, project attribution, partner attribution (with tier and code), and relationship manager contact details.
   - Eagerly loads all `SiteVisit` records and `Booking` transaction history for the lead.
-  - Returns bookings chronologically by lifecycle event (`COALESCE(Booking.cancelled_at, Booking.created_at) ASC, Booking.id ASC`), ensuring natural before-and-after replacement flows.
+  - Returns bookings chronologically by lifecycle event (`COALESCE(Booking.cancelled_at, Booking.created_at) ASC, Booking.id ASC`).
+  - **Derived Three-Event Lifecycle (`lifecycle_events`)**: Derives discrete `CustomerLifecycleEvent` items representing chronological state transitions along the customer journey:
+    1. `BOOKING_CREATED` (Booking Attempted) — emitted at `booking.created_at`.
+    2. `BOOKING_CANCELLED` (Booking Cancelled) — emitted at `booking.cancelled_at` if cancelled.
+    3. `BOOKING_CONFIRMED` / `BOOKING_COMPLETED` (Replacement Booking Confirmed) — emitted at `replacement.created_at` with `is_replacement = True`.
+  - Strictly preserves database model integrity: there are still only 2 `Booking` database records in a replacement scenario; the 3 business events are derived on-the-fly without altering KPI calculations.
 
 ### 6.2 Frontend Global Search & Customer Detail Route
 - **Global Header Search (`CustomerSearch`)**:
@@ -182,7 +187,11 @@ To provide global customer discovery and lifecycle transparency without creating
 - **Customer Detail Page (`/customers/[leadId]`)**:
   - Full App Router page route (`frontend/src/app/customers/[leadId]/page.tsx`).
   - Renders `CustomerDetailView` within standard `AppShell` layout.
-  - Interactive replacement lifecycle banner highlights unit changes (e.g. `Unit 773 Cancelled → Unit 1706 Confirmed`).
+  - **Three-Event Chronological Timeline**: Visual cards rendering each lifecycle transition:
+    - Step 1: `Booking Attempted` (Nov 17, 2026 · BK-2026-000014 · Unit 773)
+    - Step 2: `Booking Cancelled` (Nov 19, 2026 · BK-2026-000014 · Unit 773 · Cancellation recorded)
+    - Step 3: `Replacement Booking Confirmed` (Nov 22, 2026 · BK-2026-000015 · Unit 1706 · Confirmed)
+  - **Raw Booking Records Table**: Displayed beneath the timeline to preserve granular underlying database and accounting records.
   - Seamless bidirectional navigation back to Dashboard (`/`) or to Referring Partner (`/?section=partners&partnerId=...`).
 
 

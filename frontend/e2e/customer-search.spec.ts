@@ -43,27 +43,54 @@ test.describe("Global Customer Search & Deterministic Booking Scenario (Issue #1
     await expect(page.getByText("Elite Realty Partners", { exact: true })).toBeVisible();
     await expect(page.getByText("Rohit Deshmukh")).toBeVisible();
 
-    // 6. Verify Cancelled Booking Attempt A appears
+    // 6. Verify Three-Event Lifecycle Timeline (Issue #12)
+    const timeline = page.getByTestId("lifecycle-events-timeline");
+    await expect(timeline).toBeVisible();
+
+    // Event 1: Booking Attempted (Unit 773)
+    const event0 = page.getByTestId("lifecycle-event-0");
+    await expect(event0).toBeVisible();
+    await expect(event0.getByText("Booking Attempted")).toBeVisible();
+    await expect(event0.getByText("BK-2026-000014")).toBeVisible();
+    await expect(event0.getByText("Unit 773")).toBeVisible();
+    await expect(event0.getByText("Step 1")).toBeVisible();
+
+    // Event 2: Booking Cancelled (Unit 773)
+    const event1 = page.getByTestId("lifecycle-event-1");
+    await expect(event1).toBeVisible();
+    await expect(event1.getByText("Booking Cancelled")).toBeVisible();
+    await expect(event1.getByText("BK-2026-000014")).toBeVisible();
+    await expect(event1.getByText("Unit 773")).toBeVisible();
+    await expect(event1.getByText("Cancellation recorded")).toBeVisible();
+    await expect(event1.getByText("Step 2")).toBeVisible();
+
+    // Event 3: Replacement Booking Confirmed (Unit 1706)
+    const event2 = page.getByTestId("lifecycle-event-2");
+    await expect(event2).toBeVisible();
+    await expect(event2.getByText("Replacement Booking Confirmed")).toBeVisible();
+    await expect(event2.getByText("BK-2026-000015")).toBeVisible();
+    await expect(event2.getByText("Unit 1706")).toBeVisible();
+    await expect(event2.getByText("Status: Confirmed")).toBeVisible();
+    await expect(event2.getByText("Step 3")).toBeVisible();
+
+    // 7. Verify Cancelled Booking Attempt A appears in raw booking table
     const cancelledBookingRow = page.getByTestId("customer-booking-row-bk-000014");
     await expect(cancelledBookingRow).toBeVisible();
     await expect(cancelledBookingRow.getByText("BK-2026-000014")).toBeVisible();
     await expect(cancelledBookingRow.getByText("Unit 773")).toBeVisible();
     await expect(cancelledBookingRow.getByText("Cancelled", { exact: true })).toBeVisible();
 
-    // 7. Verify Replacement Booking Attempt B appears
+    // 8. Verify Replacement Booking Attempt B appears in raw booking table
     const replacementBookingRow = page.getByTestId("customer-booking-row-bk-000015");
     await expect(replacementBookingRow).toBeVisible();
     await expect(replacementBookingRow.getByText("BK-2026-000015")).toBeVisible();
     await expect(replacementBookingRow.getByText("Unit 1706")).toBeVisible();
     await expect(replacementBookingRow.getByText("Confirmed", { exact: true })).toBeVisible();
 
-    // 8. Verify replacement lifecycle banner and chronology
-    await expect(page.getByTestId("replacement-lifecycle-banner")).toBeVisible();
+    // 9. Verify replacement lifecycle badge and raw booking details
+    await expect(page.getByTestId("replacement-lifecycle-badge")).toBeVisible();
     await expect(page.getByText("Unit Replacement Lifecycle Detected")).toBeVisible();
-
-    // 9. Verify different units are displayed
-    await expect(cancelledBookingRow.getByText("Unit 773")).toBeVisible();
-    await expect(replacementBookingRow.getByText("Unit 1706")).toBeVisible();
+    await expect(page.getByText(/Raw Booking Records \(2\)/)).toBeVisible();
 
     // 10. Verify cancellation timestamp is visible
     await expect(cancelledBookingRow.getByText(/Cancellation:/)).toBeVisible();

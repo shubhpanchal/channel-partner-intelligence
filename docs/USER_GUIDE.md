@@ -145,10 +145,11 @@ On the Customer Detail page:
 - **Attribution**: Inspect assigned developer project, relationship manager (`@harivishva.com`), and click the referring channel partner badge to view the broker's performance profile.
 - **Site Visit History**: Review all scheduled and completed property tours, verification methods, and visit outcomes.
 - **Booking & Lifecycle History**:
-  - Chronological transaction log of all booking attempts.
-  - **Unit Replacement Timeline**: When a customer changes units following a cancellation, a visual banner highlights the lifecycle transition:
-    $$\text{Unit 773 (Attempted Nov 17, Cancelled Nov 19)} \longrightarrow \text{Unit 1706 (Attempted Nov 22, Confirmed Nov 22)}$$
-  - Review booking references (`BK-2026-...`), unit types, attempt timestamps, cancellation timestamps, and agreement values.
+  - **Three-Event Chronological Timeline**: Visually renders the complete lifecycle journey:
+    1. **Booking Attempted** (Nov 17, 2026 · 08:48 AM) — `BK-2026-000014`, `Unit 773`, `3 BHK Luxury`, `Skyfinia Phase 1`.
+    2. **Booking Cancelled** (Nov 19, 2026 · 09:54 AM) — `BK-2026-000014`, `Unit 773`, *Cancellation recorded*.
+    3. **Replacement Booking Confirmed** (Nov 22, 2026 · 09:01 PM) — `BK-2026-000015`, `Unit 1706`, `3 BHK Luxury`, `Skyfinia Phase 1`, *Status: Confirmed*.
+  - **Raw Booking Records Table**: Displayed beneath the timeline, detailing underlying database transactions, token amounts, commission calculations, and contract values.
 
 ---
 

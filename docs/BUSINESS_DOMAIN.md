@@ -220,7 +220,13 @@ Represents an executed transactional agreement and token payment for a specific 
    - Sequential booking attempts for the same lead may specify different unit numbers (e.g., Unit 286 cancelled $\rightarrow$ Unit 811 confirmed). Distinct unit inventory across sequential attempts is fully valid.
 5. **Active Booking Invariant**: A lead may not have more than **one concurrent active booking** (status `Initiated` or `Confirmed`).
 6. **Terminal Records**: `Completed` and `Cancelled` records are historical/terminal records and do **NOT** count as concurrent active bookings.
-7. **Commission Assumption Disclaimer**:
+7. **Booking Record vs. Booking Lifecycle Event**:
+   - **Booking Record** (`bookings` database table): Persistent relational storage capturing commercial terms, allocated unit, and financial ledger status. In a cancellation + replacement scenario, exactly **2 booking records** exist in the database (Record A: Unit 773 `Cancelled`, Record B: Unit 1706 `Confirmed`). No fake 3rd database record is created.
+   - **Booking Lifecycle Event** (`CustomerLifecycleEvent` derived representation): Discrete chronological business events representing customer journey transitions. The same scenario produces **3 distinct lifecycle events**:
+     1. `BOOKING_CREATED` (Booking Attempted) — emitted at `booking_a.created_at` for Unit 773.
+     2. `BOOKING_CANCELLED` (Booking Cancelled) — emitted at `booking_a.cancelled_at` for Unit 773.
+     3. `BOOKING_CONFIRMED` (Replacement Booking Confirmed) — emitted at `booking_b.created_at` for Unit 1706 (`is_replacement = True`).
+8. **Commission Assumption Disclaimer**:
    > **Synthetic Data Notice**: The default `2.0%` base commission rate and computed commission amounts are synthetic sample/demo data assumptions used for analytical pipeline modeling only. They do **NOT** represent Harivishva's actual commercial commission policy or partner contract terms.
 
 ---
