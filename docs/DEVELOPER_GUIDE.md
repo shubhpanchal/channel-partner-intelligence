@@ -4,14 +4,15 @@
 
 **Channel Partner Intelligence** is an enterprise-grade analytics and decision-support platform designed to monitor, analyze, and optimize channel partner (broker/agent) performance across real estate and multi-tier distribution networks.
 
-### Current Status: Phase 2D — Harivishva Demo Personalization
+### Current Status: Phase 2E — Projects Portfolio & Project Detail
 - **Phase 1 Complete**: Light B2B SaaS UI foundation, design tokens, reusable states, and test quality gates established.
 - **Phase 2A Complete**: Formally defined business domain model ([`docs/BUSINESS_DOMAIN.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/BUSINESS_DOMAIN.md)) and REST API contracts ([`docs/API_CONTRACTS.md`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/docs/API_CONTRACTS.md)).
 - **Phase 2B Complete**: SQLAlchemy 2.0 database models, SQLite schema with foreign keys and partial unique indexes, deterministic synthetic data generator (`SEED = 42`), comprehensive data-integrity validator, and backend CLI management tools.
 - **Phase 2C-1 Complete**: First end-to-end vertical slice connecting `GET /api/v1/overview/summary` to the Next.js frontend via TanStack Query, eliminating mock data and rendering 100% database-backed metrics.
 - **Phase 2C-2 Complete**: Second end-to-end vertical slice delivering `GET /api/v1/partners` and `GET /api/v1/partners/{id}`, real-time filtering, debounced multi-field search, zero N+1 batch-grouped SQL queries, pagination, and Partner Detail view with 4-stage conversion funnels and transaction logs.
 - **Phase 2D Complete**: Personalized synthetic demo tailored specifically to Harivishva's Tathawade (Pune) residential portfolio across 2 project families (Skyfinia Phase 1 & 2, Infinia Phase 1 & 2), 5 sales managers, 36 partners (6 T1, 10 T2, 20 T3), ~1,262 leads, ~728 visits, and ~156 bookings, accompanied by subtle synthetic demo context indicators.
-- Strict quality gates enforced across both backend (>96% coverage) and frontend (>99% coverage).
+- **Phase 2E Complete**: Fully operational Projects module with `GET /api/v1/projects` (with summary strip, family and status filtering, debounced search, deterministic sorting, and pagination) and `GET /api/v1/projects/{id}` (with inventory allocation, 6-KPI strip, 4-stage funnel velocity, 12-month 2026 pipeline trends, top 10 contributing channel partners with profile navigation, and bounded recent confirmed bookings table).
+- Strict quality gates enforced across both backend (>95% coverage) and frontend (>97% coverage).
 
 ---
 
@@ -27,22 +28,24 @@ Channel Partner Intelligence
 │   │   │   ├── common/           # Reusable state components (Empty, Loading, Error)
 │   │   │   ├── dashboard/        # Overview view & Phase roadmap views
 │   │   │   ├── layout/           # AppShell, Sidebar, Header
+│   │   │   ├── partners/         # PartnersDirectoryView, PartnerDetailView
+│   │   │   ├── projects/         # ProjectsDirectoryView, ProjectDetailView
 │   │   │   └── ui/               # shadcn/ui primitives (Button, Card, Badge, Table, etc.)
-│   │   ├── hooks/                # TanStack Query custom hooks (useOverviewSummary)
-│   │   ├── lib/                  # Utility functions (cn, formatting) & API clients (overviewApi)
+│   │   ├── hooks/                # TanStack Query custom hooks (useOverviewSummary, usePartners, useProjects)
+│   │   ├── lib/                  # Utility functions (cn, formatting) & API clients (overview, partners, projects)
 │   │   └── __tests__/            # Vitest unit & component test suites
-│   ├── e2e/                      # Playwright end-to-end test suites
+│   ├── e2e/                      # Playwright end-to-end test suites (overview, partners, projects, customer-search)
 │   ├── vitest.config.ts          # Vitest + V8 coverage configuration (>85% thresholds)
 │   └── package.json
 │
 ├── backend/                      # FastAPI + Pydantic + SQLAlchemy 2.0 + SQLite
 │   ├── app/
 │   │   ├── api/
-│   │   │   └── v1/               # Versioned API routes (overview, health check)
-│   │   ├── core/                 # Config (BaseSettings), Database engine & domain semantics
+│   │   │   └── v1/               # Versioned API routes (overview, health, partners, projects, customers)
+│   │   ├── core/                 # Config (BaseSettings), Database engine & domain semantics (get_project_family)
 │   │   ├── models/               # SQLAlchemy 2.0 entities (Salesperson, Project, ChannelPartner, Lead, SiteVisit, Booking, PartnerActivity)
-│   │   ├── schemas/              # Pydantic v2 validation & response contracts (overview.py)
-│   │   ├── services/             # Analytics & query services (overview_service.py)
+│   │   ├── schemas/              # Pydantic v2 validation & response contracts (overview, partners, projects, customers)
+│   │   ├── services/             # Analytics & query services (overview, partner, project, customer)
 │   │   ├── seed/                 # Deterministic synthetic data generator (seed=42) & integrity validator
 │   │   ├── cli.py                # Database management and seeding CLI commands
 │   │   └── main.py               # FastAPI entry point & CORS configuration
@@ -136,6 +139,25 @@ To prevent data-heavy lists from bloating page height and causing horizontal ove
 - **UI Components**:
   - `PartnersDirectoryView`: Top controls (debounced search, tier/status/city dropdowns, sorting), view switcher (`Cards | List`), Portfolio summary strip, cards grid, dense operational table, and pagination controls.
   - `PartnerDetailView`: Partner header with relationship manager card, 4 performance summary cards, 4-stage funnel flow, Recharts monthly funnel trend and project contribution charts, conversion rates matrix, and bounded viewports for recent leads and bookings.
+
+---
+
+## 5. Projects API & Portfolio Architecture (Phase 2E)
+
+### 5.1 Project Family Authoritative Derivation
+The project family (`Skyfinia` or `Infinia`) is derived authoritatively using a single backend mechanism in [`backend/app/core/domain_semantics.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/core/domain_semantics.py) (`get_project_family(name, code)`), exposed as a dynamic property on the `Project` model entity (`project.project_family`), and mapped cleanly across Pydantic schemas without schema migration overhead.
+
+### 5.2 Project KPIs and Funnel Semantics
+1. **Inventory Utilization**: `booked_units = count(bookings where status in ('Confirmed', 'Completed'))`, utilization % = `booked_units / target_units * 100`.
+2. **Lead Metrics**: Total leads, valid leads (`status != 'Invalid'`), qualified leads (`qualified_at IS NOT NULL`), qualification rate %.
+3. **Site Visits**: Scheduled visits, completed visits, completion rate %, unique visited leads, qualified lead $\rightarrow$ visit rate %.
+4. **Bookings**: Confirmed bookings, direct booking exclusion for `visit_to_booking_rate_pct = confirmed_from_visited / unique_visited_leads * 100`, overall lead $\rightarrow$ booking rate % = `confirmed_bookings / valid_leads * 100`, gross booking value INR.
+5. **Top Channel Partners**: Top 10 brokerage firms sorted deterministically by confirmed bookings, sales value, valid leads, and partner name.
+6. **Recent Bookings**: Latest 10 confirmed/completed transactions bounded in an internal viewport (`max-h-[300px] overflow-y-auto`).
+
+---
+
+## 6. Database Architecture & SQLite Configuration
 
 ---
 

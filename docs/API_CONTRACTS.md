@@ -611,3 +611,154 @@ Retrieves full customer identity, attribution, site visit logs, and complete chr
 }
 ```
 
+---
+
+### 2.4 Projects & Developments (Phase 2E)
+
+#### `GET /api/v1/projects`
+Retrieves paginated projects directory with portfolio summary strip, search, family, and status filters.
+
+- **Query Parameters**:
+  - `page` (optional, default `1`): Page number (1-indexed).
+  - `page_size` (optional, default `20`, max `100`): Items per page.
+  - `search` (optional, string): Filters by project name or project code (case-insensitive substring match).
+  - `family` (optional, string): Filter by project family (`Skyfinia`, `Infinia`).
+  - `status` (optional, string): Filter by development status (`Active`, `Upcoming`, `Nearly Sold Out`, `Completed`, `On Hold`).
+  - `sort_by` (optional, string): Sort field (`name`, `target_units`, `available_units`, `booked_units`, `booking_value`). Defaults to `name` ascending with `id` tie-breaker.
+- **Success Response (`200 OK`)**:
+```json
+{
+  "items": [
+    {
+      "id": "prj-sky-p1",
+      "project_code": "prj-sky-p1",
+      "name": "Skyfinia Phase 1",
+      "project_family": "Skyfinia",
+      "project_type": "Residential High-Rise",
+      "location": "Tathawade",
+      "city": "Pune",
+      "status": "Active",
+      "launch_date": "2026-01-01",
+      "target_units": 320,
+      "available_units": 280,
+      "starting_price": 8800000.0,
+      "metrics": {
+        "target_units": 320,
+        "available_units": 280,
+        "booked_units": 40,
+        "inventory_utilization_pct": 12.5,
+        "total_leads": 315,
+        "valid_leads": 310,
+        "qualified_leads": 242,
+        "qualification_rate_pct": 78.06,
+        "completed_visits": 158,
+        "confirmed_bookings": 40,
+        "gross_booking_value_inr": 400780000.0,
+        "overall_conversion_rate_pct": 12.9
+      }
+    }
+  ],
+  "pagination": {
+    "total": 4,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  },
+  "portfolio_summary": {
+    "total_projects": 4,
+    "total_families": 2,
+    "total_target_units": 1250,
+    "total_available_units": 1092,
+    "total_booked_units": 158,
+    "total_booking_value_inr": 1583400000.0
+  }
+}
+```
+
+#### `GET /api/v1/projects/{id}`
+Retrieves authoritative project profile, inventory utilization, 4-stage funnel conversion, 12-month 2026 trends, top 10 contributing channel partners, and recent confirmed unit closures.
+
+- **Path Parameters**:
+  - `id` (required, string): Project ID (e.g. `prj-sky-p1`) or project code.
+- **Success Response (`200 OK`)**:
+```json
+{
+  "id": "prj-sky-p1",
+  "project_code": "prj-sky-p1",
+  "name": "Skyfinia Phase 1",
+  "project_family": "Skyfinia",
+  "project_type": "Residential High-Rise",
+  "location": "Tathawade",
+  "city": "Pune",
+  "status": "Active",
+  "launch_date": "2026-01-01",
+  "target_units": 320,
+  "available_units": 280,
+  "starting_price": 8800000.0,
+  "inventory": {
+    "target_units": 320,
+    "available_units": 280,
+    "booked_units": 40,
+    "inventory_utilization_pct": 12.5
+  },
+  "lead_metrics": {
+    "total_leads": 315,
+    "valid_leads": 310,
+    "qualified_leads": 242,
+    "qualification_rate_pct": 78.06
+  },
+  "site_visit_metrics": {
+    "scheduled_visits": 185,
+    "completed_visits": 158,
+    "visit_completion_rate_pct": 85.41,
+    "unique_visited_leads": 130,
+    "qualified_lead_to_visit_rate_pct": 53.72
+  },
+  "booking_metrics": {
+    "confirmed_bookings": 40,
+    "confirmed_from_visited_leads": 39,
+    "direct_confirmed_bookings": 1,
+    "visit_to_booking_rate_pct": 30.0,
+    "overall_lead_to_booking_rate_pct": 12.9,
+    "gross_booking_value_inr": 400780000.0
+  },
+  "partner_metrics": {
+    "contributing_lead_partners": 36,
+    "contributing_booking_partners": 24
+  },
+  "monthly_trends": [
+    { "month": "Jan", "leads": 26, "completed_visits": 13, "bookings": 3 }
+  ],
+  "top_partners": [
+    {
+      "partner_id": "cp-1001",
+      "partner_code": "CP-1001",
+      "partner_name": "Apex Realty",
+      "tier": "Tier 1",
+      "assigned_salesperson_name": "Rohit Deshmukh",
+      "valid_leads": 18,
+      "completed_visits": 12,
+      "confirmed_bookings": 4,
+      "booking_value_inr": 40500000.0,
+      "overall_conversion_rate_pct": 22.22
+    }
+  ],
+  "recent_bookings": [
+    {
+      "id": "bk-000001",
+      "booking_reference": "BK-2026-000001",
+      "lead_id": "ld-000012",
+      "customer_name": "Rajesh Sharma",
+      "channel_partner_id": "cp-1001",
+      "channel_partner_name": "Apex Realty",
+      "unit_number": "402",
+      "unit_type": "2 BHK",
+      "booking_date": "2026-02-14",
+      "booking_status": "Confirmed",
+      "booking_value": 9800000.0
+    }
+  ]
+}
+```
+
+

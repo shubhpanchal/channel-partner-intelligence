@@ -67,6 +67,17 @@ describe("AppShell Component", () => {
     expect(screen.getByTestId("partners-search-input")).toBeInTheDocument();
   });
 
+  it("navigates to projects portfolio when projects nav item is clicked", () => {
+    renderWithProviders(<AppShell />);
+
+    // Click on Projects navigation
+    const projectsNav = screen.getByTestId("nav-item-projects");
+    fireEvent.click(projectsNav);
+
+    expect(screen.getAllByText("Project Portfolio").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId("projects-search-input")).toBeInTheDocument();
+  });
+
   it("navigates to placeholder section when other navigation items are clicked", () => {
     renderWithProviders(<AppShell />);
 

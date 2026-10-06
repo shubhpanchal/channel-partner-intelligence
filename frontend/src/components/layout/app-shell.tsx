@@ -6,6 +6,7 @@ import { Sidebar, NavItemKey, NAV_ITEMS } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { OverviewView } from "@/components/dashboard/overview-view";
 import { PartnersDirectoryView } from "@/components/partners/partners-directory-view";
+import { ProjectsDirectoryView } from "@/components/projects/projects-directory-view";
 import { PlaceholderView } from "@/components/dashboard/placeholder-view";
 
 const SECTION_TITLES: Record<NavItemKey, { title: string; subtitle: string }> = {
@@ -30,8 +31,8 @@ const SECTION_TITLES: Record<NavItemKey, { title: string; subtitle: string }> = 
     subtitle: "Confirmed unit closures, revenue contribution, and partner payout tracking",
   },
   projects: {
-    title: "Projects & Inventory Allocation",
-    subtitle: "Active project portfolio, unit availability, and partner marketing assets",
+    title: "Project Portfolio",
+    subtitle: "Portfolio, inventory, funnel velocity, and channel contribution across Skyfinia and Infinia",
   },
   "action-center": {
     title: "Intelligence Action Center",
@@ -51,6 +52,7 @@ function AppShellInner() {
   const searchParams = useSearchParams();
   const sectionParam = searchParams?.get("section") as NavItemKey | null;
   const partnerIdParam = searchParams?.get("partnerId");
+  const projectIdParam = searchParams?.get("projectId");
 
   const [activeKey, setActiveKey] = useState<NavItemKey>(() => {
     if (sectionParam && SECTION_TITLES[sectionParam]) {
@@ -59,7 +61,7 @@ function AppShellInner() {
     return "overview";
   });
 
-
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(partnerIdParam || null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -67,6 +69,12 @@ function AppShellInner() {
       setActiveKey(sectionParam);
     }
   }, [sectionParam]);
+
+  useEffect(() => {
+    if (partnerIdParam) {
+      setSelectedPartnerId(partnerIdParam);
+    }
+  }, [partnerIdParam]);
 
   const currentSection = SECTION_TITLES[activeKey] || SECTION_TITLES.overview;
 
@@ -93,7 +101,15 @@ function AppShellInner() {
             {activeKey === "overview" ? (
               <OverviewView />
             ) : activeKey === "partners" ? (
-              <PartnersDirectoryView initialPartnerId={partnerIdParam} />
+              <PartnersDirectoryView initialPartnerId={selectedPartnerId} />
+            ) : activeKey === "projects" ? (
+              <ProjectsDirectoryView
+                initialProjectId={projectIdParam}
+                onSelectPartner={(partnerId) => {
+                  setSelectedPartnerId(partnerId);
+                  setActiveKey("partners");
+                }}
+              />
             ) : (
               <PlaceholderView
                 sectionKey={activeKey}

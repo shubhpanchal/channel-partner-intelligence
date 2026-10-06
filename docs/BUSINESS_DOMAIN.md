@@ -94,19 +94,27 @@ Represents an external brokerage, real estate consultant, or independent agent a
 ### 2.2 Project (`projects`)
 Represents a real estate development asset being marketed and sold by the developer.
 
-- **Primary Key**: `id` (UUID or Integer ID)
-- **Business Identifier**: `project_code` (e.g., `PRJ-SOLARIS`)
+- **Primary Key**: `id` (e.g. `prj-sky-p1`, `prj-sky-p2`, `prj-inf-p1`, `prj-inf-p2`)
+- **Business Identifier**: `project_code` (e.g. `prj-sky-p1`)
 - **Key Attributes**:
-  - `name`: Commercial project name (e.g., "Solaris Residences").
-  - `project_type`: Development classification (`Residential`, `Commercial`, `Mixed-Use`, `Plotted`).
-  - `location`: Micro-market/suburb (e.g., "Kharadi").
-  - `city`: Metropolitan city (e.g., "Pune").
+  - `name`: Commercial project name (e.g. "Skyfinia Phase 1", "Infinia Phase 1").
+  - `project_family`: Authoritatively derived project family (`Skyfinia` or `Infinia`) via single backend derivation mechanism `get_project_family(name, code)`.
+  - `project_type`: Development classification (`Residential High-Rise`, `Residential`, `Commercial`, `Mixed-Use`).
+  - `location`: Micro-market/suburb (`Tathawade`).
+  - `city`: Metropolitan city (`Pune`).
   - `status`: Lifecycle stage (`Upcoming`, `Active`, `Nearly Sold Out`, `Completed`, `On Hold`).
   - `launch_date`: Official commercial launch date.
   - `target_units`: Total saleable units planned in the project.
-  - `available_units`: Current unsold unit inventory count.
-  - `starting_price`: Base starting unit price for financial context.
+  - `available_units`: Current unsold unit inventory count (synthetic seed value).
+  - `starting_price`: Base synthetic floor unit price for commercial context.
   - `created_at`, `updated_at`: ISO-8601 UTC timestamps.
+
+#### Canonical Harivishva Demo Portfolio (SEED = 42)
+1. **Skyfinia Phase 1** (`prj-sky-p1`): Family: `Skyfinia`, Location: `Tathawade, Pune`, Target: `320` units, Starting Price: `₹88L` synthetic floor.
+2. **Skyfinia Phase 2** (`prj-sky-p2`): Family: `Skyfinia`, Location: `Tathawade, Pune`, Target: `280` units, Starting Price: `₹95L` synthetic floor.
+3. **Infinia Phase 1** (`prj-inf-p1`): Family: `Infinia`, Location: `Tathawade, Pune`, Target: `350` units, Starting Price: `₹82L` synthetic floor.
+4. **Infinia Phase 2** (`prj-inf-p2`): Family: `Infinia`, Location: `Tathawade, Pune`, Target: `300` units, Starting Price: `₹89L` synthetic floor.
+- **Portfolio Aggregates**: 4 Projects, 2 Families, 1,250 Target Units, 1,092 Available Units, 158 Confirmed Bookings, ₹158.34 Cr Gross Booking Value.
 
 #### Project Status Lifecycle
 - `Upcoming`: Pre-launch phase; gathering early interest.

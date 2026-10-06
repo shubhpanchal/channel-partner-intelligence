@@ -116,10 +116,27 @@ Financial and unit closure tracking.
 
 ---
 
-### 3.6 Projects Portfolio *(Scheduled for Phase 2)*
-Development project inventory and marketing assets.
-- **Unit Availability**: Real-time inventory status per project tower and layout.
-- **Partner Allocations**: Tailored marketing brochures and pricing sheets distributed to channel networks.
+### 3.6 Projects Portfolio & Project Detail *(Phase 2E — Live Database-Backed)*
+Development project inventory, funnel velocity, and partner channel contributions across Harivishva's Tathawade developments.
+
+- **Portfolio Summary Context Strip**:
+  - Surfaces total canonical projects (4), project families (2: Skyfinia & Infinia), planned target units (1,250), available unsold inventory (1,092), confirmed bookings (158), and gross sales value (₹158.34 Cr).
+- **Projects Directory Deck**:
+  - Visual cards representing all 4 development assets: *Skyfinia Phase 1*, *Skyfinia Phase 2*, *Infinia Phase 1*, and *Infinia Phase 2*.
+  - Displays project family badge, status, location (`Tathawade, Pune`), starting price floor (synthetic), target/available/booked units, lead volume, completed visits, confirmed bookings, and sales volume.
+- **Search & Multi-Criteria Filtering**:
+  - **Debounced Search**: Filter by project name or code (e.g. `prj-sky-p1`).
+  - **Family Filter**: Slices developments by family (`Skyfinia`, `Infinia`).
+  - **Status Filter**: Filters by development state (`Active`, `Nearly Sold Out`, `Upcoming`, `Completed`).
+  - **Deterministic Sorting**: Sort by Name (A-Z), Target Units, Available Units, Booked Units, or Gross Sales Value.
+- **Project Detail View**:
+  - Clicking **View Project →** opens the project detail page.
+  - **Header & Inventory Box**: Identity badges, location, launch date, starting price floor, and inventory allocation progress bar (Target, Available, Booked, % Utilization).
+  - **6-KPI Performance Strip**: Valid Leads, Milestone-Qualified Leads, Completed Site Visits, Confirmed Bookings, Gross Booking Value (INR), and Overall Lead → Booking Conversion Rate.
+  - **4-Stage Funnel Flow**: *Valid Leads → Qualified Leads → Visited Prospects → Confirmed Bookings* with stage conversion rates.
+  - **12-Month Pipeline Velocity Chart**: Chronological Recharts area visualization tracking valid leads, completed site visits, and confirmed bookings across 2026.
+  - **Top Contributing Channel Partners Table**: Top 10 brokerage firms delivering verified leads and confirmed bookings for this project, with direct navigation to the partner's profile.
+  - **Recent Project Bookings Table**: Bounded internal viewport (`max-h-[300px]`) detailing the latest confirmed unit closures.
 
 ---
 

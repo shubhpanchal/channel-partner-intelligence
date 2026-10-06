@@ -41,7 +41,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "leads", label: "Leads", icon: UserCheck, badge: "Phase 2" },
   { key: "site-visits", label: "Site Visits", icon: CalendarCheck, badge: "Phase 2" },
   { key: "bookings", label: "Bookings", icon: FileCheck, badge: "Phase 2" },
-  { key: "projects", label: "Projects", icon: Building2, badge: "Phase 2" },
+  { key: "projects", label: "Projects", icon: Building2 },
   { key: "action-center", label: "Action Center", icon: Zap, badge: "Phase 3" },
   { key: "reports", label: "Reports", icon: BarChart3, badge: "Phase 3" },
   { key: "settings", label: "Settings", icon: Settings },

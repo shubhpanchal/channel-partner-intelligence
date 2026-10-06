@@ -38,6 +38,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.core.domain_semantics import get_project_family
 
 # ==============================================================================
 # Domain Status Enums
@@ -182,6 +183,11 @@ class Project(Base):
         "SiteVisit", back_populates="project"
     )
     bookings: Mapped[List[Booking]] = relationship("Booking", back_populates="project")
+
+    @property
+    def project_family(self) -> str:
+        """Authoritative project family ('Skyfinia' or 'Infinia')."""
+        return get_project_family(self.name, self.project_code)
 
     def __repr__(self) -> str:
         return f"<Project(id={self.id!r}, code={self.project_code!r}, name={self.name!r})>"

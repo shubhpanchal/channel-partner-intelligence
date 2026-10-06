@@ -19,6 +19,21 @@ TERMINAL_BOOKING_STATUSES = frozenset({"Completed", "Cancelled"})
 DEFAULT_DEMO_COMMISSION_RATE_PCT = 2.0
 
 
+def get_project_family(project_name: str, project_code: str = "") -> str:
+    """Authoritative project family derivation for Harivishva developments.
+
+    Derives project family classification ('Skyfinia' or 'Infinia') from project name or code.
+    """
+    name_lower = (project_name or "").lower()
+    code_lower = (project_code or "").lower()
+
+    if "skyfinia" in name_lower or "sky" in code_lower:
+        return "Skyfinia"
+    if "infinia" in name_lower or "inf" in code_lower:
+        return "Infinia"
+    return "Other"
+
+
 def is_lead_historically_qualified(lead_data: dict[str, Any]) -> bool:
     """Determine if a lead is historically qualified based on the milestone timestamp.
 
