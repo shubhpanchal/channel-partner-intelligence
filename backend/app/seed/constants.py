@@ -191,3 +191,18 @@ ACTIVITY_TYPES = [
     "follow_up",
     "meeting",
 ]
+
+# Canonical Deterministic Customer Scenario for Demo & QA (Issue #11)
+CANONICAL_DEMO_CUSTOMER = {
+    "lead_id": "ld-000067",
+    "lead_code": "LD-2026-000067",
+    "customer_name": "Aarav Mehta",
+    "customer_phone": "+919822099901",
+    "customer_email": "aarav.mehta@example.com",
+    "channel_partner_id": "cp-1001",
+    "channel_partner_name": "Elite Realty Partners",
+    "project_id": "prj-sky-p1",
+    "project_name": "Skyfinia Phase 1",
+    "salesperson_id": "sp-101",
+    "salesperson_name": "Rohit Deshmukh",
+}

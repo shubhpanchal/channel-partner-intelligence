@@ -123,25 +123,55 @@ Development project inventory and marketing assets.
 
 ---
 
-### 3.7 Action Center *(Scheduled for Phase 3)*
+### 3.7 Global Customer Search & Customer Lifecycle Investigation *(Phase 2 QA/UX)*
+
+The top application header includes a global customer search field:
+
+`Search customer, lead, phone...`
+
+#### How to Search for a Customer
+1. Type at least **2 characters** into the search field (e.g. `Aarav`, `9822099901`, `aarav.mehta@example.com`, or `LD-2026-000067`).
+2. A lightweight result popover appears beneath the search bar within 300ms, showing:
+   - Customer Full Name
+   - Lead Business Reference (e.g. `LD-2026-000067`)
+   - Current Status Badge (e.g. `Converted`, `Qualified`)
+   - Assigned Project (e.g. `Skyfinia Phase 1`)
+   - Referring Channel Partner (e.g. `Elite Realty Partners`)
+3. Click any result item to navigate immediately to the dedicated **Customer Detail View** at `/customers/[leadId]`.
+
+#### How to Inspect Customer Booking Lifecycle & Replacement History
+On the Customer Detail page:
+- **Customer Identity**: View full contact info (phone, email, budget range, requirement type) and lead status.
+- **Attribution**: Inspect assigned developer project, relationship manager (`@harivishva.com`), and click the referring channel partner badge to view the broker's performance profile.
+- **Site Visit History**: Review all scheduled and completed property tours, verification methods, and visit outcomes.
+- **Booking & Lifecycle History**:
+  - Chronological transaction log of all booking attempts.
+  - **Unit Replacement Timeline**: When a customer changes units following a cancellation, a visual banner highlights the lifecycle transition:
+    $$\text{Unit 773 (Attempted Nov 17, Cancelled Nov 19)} \longrightarrow \text{Unit 1706 (Attempted Nov 22, Confirmed Nov 22)}$$
+  - Review booking references (`BK-2026-...`), unit types, attempt timestamps, cancellation timestamps, and agreement values.
+
+---
+
+### 3.8 Action Center *(Scheduled for Phase 3)*
 Intelligent decision-support engine.
 - **Automated Alerts**: Proactive notifications for at-risk partners slipping in activity.
 - **Targeted Campaigns**: Recommended incentives for brokers with high customer pipelines.
 
 ---
 
-### 3.8 Reports & Analytics Studio *(Scheduled for Phase 3)*
+### 3.9 Reports & Analytics Studio *(Scheduled for Phase 3)*
 Custom report builder and export center.
 - **Executive Summaries**: Scheduled weekly PDF digests delivered directly to stakeholders.
 - **Custom Exports**: Filtered CSV data exports for external accounting and CRM synchronization.
 
 ---
 
-### 3.9 Settings & System Diagnostics *(Configuration)*
+### 3.10 Settings & System Diagnostics *(Configuration)*
 System administrator settings, API connectivity indicators, and role permissions.
 
 ---
 
 ## 4. Current Status Notice
 
-> **Note**: The platform has completed **Phase 1 (Foundation & UI System)** and **Phase 2A (Business Domain, Data Model & KPI Specification)**. Domain entities, 4-stage funnels, and mathematical calculation models are formally specified. Live SQLite database tables and synthetic data feeds will be instantiated in Phase 2B/2C.
+> **Note**: The platform has completed **Phase 1 (Foundation & UI System)**, **Phase 2A (Business Domain & KPI Specification)**, **Phase 2B (Database Models & Deterministic Seeding)**, **Phase 2C (Executive Overview & Channel Partners Portfolio Slice)**, **Phase 2D (Harivishva Demo Personalization)**, and **Phase 2 QA/UX (Global Customer Search & Deterministic Booking Lifecycle)**.
+

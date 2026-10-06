@@ -36,3 +36,35 @@ export function formatPercent(val: number, precision: number = 1): string {
   if (val === undefined || val === null || isNaN(val)) return "0.0%";
   return `${val.toFixed(precision)}%`;
 }
+
+/**
+ * Format date string or Date object into human-readable date (e.g. Nov 17, 2026)
+ */
+export function formatDate(dateVal: string | Date | null | undefined): string {
+  if (!dateVal) return "—";
+  const d = typeof dateVal === "string" ? new Date(dateVal) : dateVal;
+  if (isNaN(d.getTime())) return String(dateVal);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/**
+ * Format date string or Date object into human-readable date and time
+ */
+export function formatDateTime(dateVal: string | Date | null | undefined): string {
+  if (!dateVal) return "—";
+  const d = typeof dateVal === "string" ? new Date(dateVal) : dateVal;
+  if (isNaN(d.getTime())) return String(dateVal);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+

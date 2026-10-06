@@ -5,6 +5,14 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Providers } from "@/app/providers";
 import * as overviewHook from "@/hooks/use-overview-summary";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    back: vi.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 const MOCK_DATA = {
   kpis: {
     active_partners: { value: 152, growth_pct: 12.4, breakdown: { tier_1: 18, tier_2: 40, tier_3: 94 } },

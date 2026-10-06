@@ -35,6 +35,7 @@ from app.models.entities import (
     Salesperson,
     SiteVisit,
 )
+from app.seed.constants import CANONICAL_DEMO_CUSTOMER
 
 
 class ValidationReport:
@@ -398,6 +399,80 @@ def validate_dataset(session: Session) -> ValidationReport:
         "One Active Booking Invariant",
         len(leads_with_multiple_active) == 0,
         f"Found {len(leads_with_multiple_active)} leads with multiple active bookings",
+    )
+
+    # 5b. Deterministic Demo Customer Scenario (Issue #11)
+    demo_leads = [
+        ld for ld in leads if ld.customer_name == CANONICAL_DEMO_CUSTOMER["customer_name"]
+    ]
+    demo_errors: List[str] = []
+    if len(demo_leads) != 1:
+        demo_errors.append(f"Expected exactly 1 demo customer, found {len(demo_leads)}")
+    else:
+        demo_ld = demo_leads[0]
+        if demo_ld.lead_code != CANONICAL_DEMO_CUSTOMER["lead_code"]:
+            demo_errors.append(
+                f"Demo lead_code mismatch: {demo_ld.lead_code} "
+                f"!= {CANONICAL_DEMO_CUSTOMER['lead_code']}"
+            )
+        if demo_ld.channel_partner_id != CANONICAL_DEMO_CUSTOMER["channel_partner_id"]:
+            demo_errors.append(
+                f"Demo partner mismatch: {demo_ld.channel_partner_id} "
+                f"!= {CANONICAL_DEMO_CUSTOMER['channel_partner_id']}"
+            )
+
+        demo_bks = sorted(
+            [b for b in all_bookings if b.lead_id == demo_ld.id],
+            key=lambda x: x.created_at,
+        )
+        if len(demo_bks) != 2:
+            demo_errors.append(
+                f"Expected exactly 2 bookings for demo customer, found {len(demo_bks)}"
+            )
+        else:
+            bk1, bk2 = demo_bks[0], demo_bks[1]
+            if bk1.booking_status != "Cancelled" or bk1.cancelled_at is None:
+                demo_errors.append(
+                    f"First booking {bk1.id} must be Cancelled with non-null cancelled_at"
+                )
+            elif bk1.created_at >= bk1.cancelled_at:
+                demo_errors.append(
+                    f"First booking {bk1.id}: created_at ({bk1.created_at}) "
+                    f">= cancelled_at ({bk1.cancelled_at})"
+                )
+
+            if bk2.booking_status not in ("Confirmed", "Completed"):
+                demo_errors.append(
+                    f"Second booking {bk2.id} must be Confirmed/Completed, "
+                    f"got {bk2.booking_status}"
+                )
+            if bk1.cancelled_at and bk2.created_at <= bk1.cancelled_at:
+                demo_errors.append(
+                    f"Second booking {bk2.id} created_at ({bk2.created_at}) "
+                    f"<= first cancelled_at ({bk1.cancelled_at})"
+                )
+            if bk1.unit_number == bk2.unit_number:
+                demo_errors.append(
+                    f"Demo scenario requires different units: "
+                    f"{bk1.unit_number} == {bk2.unit_number}"
+                )
+
+            # 2026 boundary
+            start_2026 = datetime(2026, 1, 1, 0, 0, 0)
+            end_2026 = datetime(2026, 12, 31, 23, 59, 59)
+            for bk in (bk1, bk2):
+                if not (start_2026 <= bk.created_at <= end_2026):
+                    demo_errors.append(f"Booking {bk.id} created_at outside 2026: {bk.created_at}")
+                if bk.cancelled_at and not (start_2026 <= bk.cancelled_at <= end_2026):
+                    demo_errors.append(
+                        f"Booking {bk.id} cancelled_at outside 2026: {bk.cancelled_at}"
+                    )
+
+    report.add_check(
+        "Deterministic Demo Customer Scenario",
+        len(demo_errors) == 0,
+        f"Verified canonical demo customer '{CANONICAL_DEMO_CUSTOMER['customer_name']}' "
+        f"({CANONICAL_DEMO_CUSTOMER['lead_code']}) with cancelled -> replacement booking lifecycle",
     )
 
     # 6. Funnel Semantics & Direct Bookings

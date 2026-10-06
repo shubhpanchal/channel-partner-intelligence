@@ -160,9 +160,37 @@ The demo dataset is strictly personalized for Harivishva's **Tathawade, Pune** r
 
 ---
 
-## 6. Database Architecture & SQLite Configuration
+## 6. Customer Search & Lifecycle History Architecture (Phase 2 QA/UX)
 
-### 6.1 SQLAlchemy 2.0 Models
+### 6.1 Backend Customer Search & Detail Services
+To provide global customer discovery and lifecycle transparency without creating an oversized CRM:
+- **Search Endpoint (`GET /api/v1/customers/search?q=<query>&page_size=<n>`)**:
+  - Performs case-insensitive partial SQL matches across `customer_name`, `customer_phone`, `customer_email`, and `lead_code`.
+  - Executes eager joined loads (`joinedload(Lead.channel_partner)`, `joinedload(Lead.project)`, `joinedload(Lead.salesperson)`) to ensure zero N+1 database queries.
+  - Requires a minimum of 2 characters and supports pagination limits (default 10).
+- **Detail Endpoint (`GET /api/v1/customers/{lead_id}`)**:
+  - Returns complete customer profile, contact info, lead status stages, project attribution, partner attribution (with tier and code), and relationship manager contact details.
+  - Eagerly loads all `SiteVisit` records and `Booking` transaction history for the lead.
+  - Returns bookings chronologically by lifecycle event (`COALESCE(Booking.cancelled_at, Booking.created_at) ASC, Booking.id ASC`), ensuring natural before-and-after replacement flows.
+
+### 6.2 Frontend Global Search & Customer Detail Route
+- **Global Header Search (`CustomerSearch`)**:
+  - Placed in the application header with placeholder `Search customer, lead, phone...`.
+  - Implements 300ms debouncing and queries `useCustomerSearch(query, 8)`.
+  - Renders a floating popover displaying matched customer names, lead codes, status badges, project attribution, and channel partner name.
+  - Responsive alignment: compact width on mobile, full width on desktop, automatically constrained to viewport boundary (`w-[calc(100vw-2.5rem)] sm:w-[420px]`).
+- **Customer Detail Page (`/customers/[leadId]`)**:
+  - Full App Router page route (`frontend/src/app/customers/[leadId]/page.tsx`).
+  - Renders `CustomerDetailView` within standard `AppShell` layout.
+  - Interactive replacement lifecycle banner highlights unit changes (e.g. `Unit 773 Cancelled → Unit 1706 Confirmed`).
+  - Seamless bidirectional navigation back to Dashboard (`/`) or to Referring Partner (`/?section=partners&partnerId=...`).
+
+
+---
+
+## 7. Database Architecture & SQLite Configuration
+
+### 7.1 SQLAlchemy 2.0 Models
 All database models are implemented using typed SQLAlchemy 2.0 declarative definitions in [`backend/app/models/entities.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/models/entities.py):
 - **`Salesperson`** (`salespeople`): 5 internal relationship managers.
 - **`Project`** (`projects`): 4 Harivishva projects across Skyfinia and Infinia.
@@ -172,7 +200,7 @@ All database models are implemented using typed SQLAlchemy 2.0 declarative defin
 - **`Booking`** (`bookings`): Transaction records with active vs terminal status tracking.
 - **`PartnerActivity`** (`partner_activities`): Historical touchpoint audit ledger.
 
-### 6.2 SQLite Foreign Keys & Partial Unique Indexes
+### 7.2 SQLite Foreign Keys & Partial Unique Indexes
 - **Foreign Key Enforcement**: SQLite does not enable foreign keys by default. An engine event listener automatically executes `PRAGMA foreign_keys=ON;` upon establishing every connection.
 - **Active Booking Invariant**: To guarantee that a lead never has more than one concurrent active booking, a SQLite partial unique index is defined:
   ```python
@@ -187,7 +215,7 @@ All database models are implemented using typed SQLAlchemy 2.0 declarative defin
 
 ---
 
-## 5. Database Management & Seeding CLI
+## 8. Database Management & Seeding CLI
 
 A dedicated CLI is provided in [`backend/app/cli.py`](file:///c:/Users/User/OneDrive/Desktop/channel-partner-intelligence/backend/app/cli.py):
 
@@ -210,18 +238,15 @@ python -m app.cli reset-db --seed 42
 
 ---
 
-## 6. Prerequisites
+## 9. Prerequisites & Environment Setup
 
+### 9.1 Prerequisites
 - **Python**: 3.10+ (tested on Python 3.11.9)
 - **Node.js**: 18.17+ / 20+ / 24+ (tested on Node v24.15.0)
 - **npm**: 9+ / 10+ / 11+
 - **Git**: 2.30+
 
----
-
-## 7. Environment Setup
-
-### 7.1 Backend Virtual Environment (`backend/.venv`)
+### 9.2 Backend Virtual Environment (`backend/.venv`)
 
 ```bash
 # Navigate to the backend directory
@@ -241,7 +266,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
 ```
 
-### 7.2 Frontend Dependencies
+### 9.3 Frontend Dependencies
 
 ```bash
 # Navigate to the frontend directory
@@ -251,7 +276,7 @@ cd frontend
 npm install
 ```
 
-### 7.3 Environment Variables
+### 9.4 Environment Variables
 
 Copy `.env.example` at the repository root to create `.env`:
 
@@ -270,9 +295,9 @@ cp .env.example .env
 
 ---
 
-## 8. Running the Application Locally
+## 10. Running the Application Locally
 
-### 8.1 Starting the Backend Server
+### 10.1 Starting the Backend Server
 
 ```bash
 cd backend
@@ -282,7 +307,7 @@ cd backend
 - Health Endpoint: `http://127.0.0.1:8000/health` (and `http://127.0.0.1:8000/api/v1/health`)
 - Interactive Swagger UI: `http://127.0.0.1:8000/api/v1/docs`
 
-### 8.2 Starting the Frontend Server
+### 10.2 Starting the Frontend Server
 
 ```bash
 cd frontend
@@ -292,7 +317,7 @@ npm run dev
 
 ---
 
-## 9. Testing & Quality Gates
+## 11. Testing & Quality Gates
 
 Quality gates enforce that code coverage never drops below **85%**. Current project status: **>98% coverage** on both backend and frontend.
 

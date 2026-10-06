@@ -4,14 +4,13 @@ import React from "react";
 import {
   Menu,
   Bell,
-  Search,
   ShieldCheck,
   User,
   SlidersHorizontal,
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CustomerSearch } from "@/components/layout/customer-search";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,16 +58,9 @@ export function Header({ title, subtitle, onOpenSidebar }: HeaderProps) {
 
       {/* Right: Actions & Profile */}
       <div className="flex items-center space-x-2 sm:space-x-3">
-        {/* Global Search Placeholder */}
-        <div className="relative hidden md:block w-56 lg:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search partners, leads, projects..."
-            className="h-8 pl-8 text-xs bg-slate-50 border-slate-200 focus:bg-white"
-            readOnly
-          />
-        </div>
+        {/* Global Customer Search */}
+        <CustomerSearch />
+
 
         {/* Subtle Persistent Demo Environment Indicator */}
         <div

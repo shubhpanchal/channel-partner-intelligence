@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Sidebar, NavItemKey, NAV_ITEMS } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { OverviewView } from "@/components/dashboard/overview-view";
@@ -46,9 +47,26 @@ const SECTION_TITLES: Record<NavItemKey, { title: string; subtitle: string }> = 
   },
 };
 
-export function AppShell() {
-  const [activeKey, setActiveKey] = useState<NavItemKey>("overview");
+function AppShellInner() {
+  const searchParams = useSearchParams();
+  const sectionParam = searchParams?.get("section") as NavItemKey | null;
+  const partnerIdParam = searchParams?.get("partnerId");
+
+  const [activeKey, setActiveKey] = useState<NavItemKey>(() => {
+    if (sectionParam && SECTION_TITLES[sectionParam]) {
+      return sectionParam;
+    }
+    return "overview";
+  });
+
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (sectionParam && SECTION_TITLES[sectionParam]) {
+      setActiveKey(sectionParam);
+    }
+  }, [sectionParam]);
 
   const currentSection = SECTION_TITLES[activeKey] || SECTION_TITLES.overview;
 
@@ -75,7 +93,7 @@ export function AppShell() {
             {activeKey === "overview" ? (
               <OverviewView />
             ) : activeKey === "partners" ? (
-              <PartnersDirectoryView />
+              <PartnersDirectoryView initialPartnerId={partnerIdParam} />
             ) : (
               <PlaceholderView
                 sectionKey={activeKey}
@@ -89,3 +107,12 @@ export function AppShell() {
     </div>
   );
 }
+
+export function AppShell() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50/60" />}>
+      <AppShellInner />
+    </Suspense>
+  );
+}
+

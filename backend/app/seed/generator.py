@@ -31,6 +31,7 @@ from app.models.entities import (
 )
 from app.seed.constants import (
     BUDGET_RANGES,
+    CANONICAL_DEMO_CUSTOMER,
     FIRST_NAMES,
     LAST_NAMES,
     LOST_REASONS,
@@ -330,8 +331,11 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
 
             lead_id = f"ld-{lead_id_counter:06d}"
             lead_code = f"LD-2026-{lead_id_counter:06d}"
-            customer_name = f"{rng.choice(FIRST_NAMES)} {rng.choice(LAST_NAMES)}"
-            customer_phone = f"+9198{rng.randint(10000000, 99999999)}"
+            raw_first = rng.choice(FIRST_NAMES)
+            raw_last = rng.choice(LAST_NAMES)
+            raw_phone = rng.randint(10000000, 99999999)
+            customer_name = f"{raw_first} {raw_last}"
+            customer_phone = f"+9198{raw_phone}"
             customer_email = f"{customer_name.lower().replace(' ', '.')}@example.com"
             budget_range = rng.choice(BUDGET_RANGES)
             req_type = rng.choice(unit_types)
@@ -804,6 +808,26 @@ def generate_synthetic_dataset(seed: int = SEED) -> Dict[str, List[Dict[str, Any
     for p in projects:
         sold = confirmed_counts_by_project.get(p["id"], 0)
         p["available_units"] = max(0, p["target_units"] - sold)
+
+    # Ensure Canonical Demo Customer is explicitly and uniquely assigned (Issue #11)
+    rep_lead_ids = {
+        b["lead_id"] for b in bookings if b["booking_status"] == "Cancelled"
+    }
+    if rep_lead_ids:
+        target_demo_lead_id = sorted(list(rep_lead_ids))[0]
+        for ld in leads:
+            if (
+                ld["id"] != target_demo_lead_id
+                and ld["customer_name"] == CANONICAL_DEMO_CUSTOMER["customer_name"]
+            ):
+                ld["customer_name"] = "Aniket Jagtap"
+                ld["customer_email"] = "aniket.jagtap@example.com"
+
+        for ld in leads:
+            if ld["id"] == target_demo_lead_id:
+                ld["customer_name"] = CANONICAL_DEMO_CUSTOMER["customer_name"]
+                ld["customer_phone"] = CANONICAL_DEMO_CUSTOMER["customer_phone"]
+                ld["customer_email"] = CANONICAL_DEMO_CUSTOMER["customer_email"]
 
     # Return complete dataset dictionary
     return {

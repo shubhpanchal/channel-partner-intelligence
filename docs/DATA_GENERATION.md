@@ -156,6 +156,44 @@ pie title Partner Tier Distribution (36 Total)
   - Infinia Phase 1: $\ge ₹82.0\text{ Lakh}$
   - Infinia Phase 2: $\ge ₹89.0\text{ Lakh}$
 
+### 4.6 Deterministic Canonical Demo Customer Scenario
+For QA verification, live executive presentations, and unit-replacement testing, the generator designates a permanent, deterministic customer scenario under `SEED = 42`:
+
+```mermaid
+journey
+    title Customer Booking Lifecycle: Aarav Mehta
+    section Lead Intake
+      Lead Ingested (Elite Realty Partners): 5: Aarav Mehta
+      Site Visit Completed (Skyfinia Phase 1): 5: Aarav Mehta
+    section Booking Attempt A (Cancelled)
+      Booked Unit 773 (₹1.85 Cr): 3: Nov 17, 2026
+      Cancelled Unit 773: 1: Nov 19, 2026 (09:54 UTC)
+    section Booking Attempt B (Replacement)
+      Replacement Unit 1706 Booked: 5: Nov 22, 2026 (21:01 UTC)
+      Confirmed Unit 1706 Closure: 5: Confirmed Active Closure
+```
+
+- **Customer Name**: `Aarav Mehta` (Guaranteed unique in database)
+- **Lead Code**: `LD-2026-000067` (`ld-000067`)
+- **Phone / Email**: `+919822099901` / `aarav.mehta@example.com`
+- **Project Attribution**: `Skyfinia Phase 1` (`prj-sky-p1`)
+- **Channel Partner**: `Elite Realty Partners` (`cp-1001`, Tier 1 Platinum)
+- **Relationship Manager**: `Rohit Deshmukh` (`sp-101`, `rohit.deshmukh@harivishva.com`)
+- **Booking Attempt 1 (Cancelled)**:
+  - Reference: `BK-2026-000014` (`bk-000014`)
+  - Unit: `Unit 773` (`3 BHK Luxury`)
+  - Attempt Date: `2026-11-17 08:48:05 UTC`
+  - Cancellation Timestamp: `2026-11-19 09:54:32 UTC`
+  - Status: `Cancelled`
+  - Value: `₹1,85,00,000`
+- **Booking Attempt 2 (Replacement & Confirmed Closure)**:
+  - Reference: `BK-2026-000015` (`bk-000015`)
+  - Unit: `Unit 1706` (`3 BHK Luxury`, different unit)
+  - Attempt Date: `2026-11-22 21:01:31 UTC` (`> Attempt 1.cancelled_at`)
+  - Cancellation Timestamp: `None`
+  - Status: `Confirmed`
+  - Value: `₹1,85,00,000`
+
 ---
 
 ## 5. Seed Command & CLI Usage
@@ -170,3 +208,4 @@ python -m app.cli validate-db
 # Clean reset and re-seed
 python -m app.cli reset-db --seed 42
 ```
+

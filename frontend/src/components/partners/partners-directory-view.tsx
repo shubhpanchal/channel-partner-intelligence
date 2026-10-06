@@ -38,9 +38,14 @@ import { EmptyState } from "@/components/common/empty-state";
 import { PartnerDetailView } from "./partner-detail-view";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
-export function PartnersDirectoryView() {
+interface PartnersDirectoryViewProps {
+  initialPartnerId?: string | null;
+}
+
+export function PartnersDirectoryView({ initialPartnerId }: PartnersDirectoryViewProps = {}) {
   // Navigation & Selected Partner state
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(initialPartnerId || null);
+
 
   // View Mode state: Cards (Portfolio Default) | List (Dense Table)
   const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
